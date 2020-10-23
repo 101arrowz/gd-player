@@ -1,0 +1,25 @@
+{
+  "name": "gd-player",
+  "version": "1.0.0",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^14.14.2",
+    "parcel": "^2.0.0-nightly.429",
+    "parcel-config-precache-manifest": "^0.0.2",
+    "parcel-config-pwa-manifest": "^0.0.8",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
+  },
+  "scripts": {
+    "build": "parcel build src/index.html"
+  },
+  "dependencies": {
+    "gd.js": "^0.2.6",
+    "preact": "^10.5.5"
+  },
+  "alias": {
+    "react": "preact/compat",
+    "react-dom": "preact/compat",
+    "react-dom/test-utils": "preact/test-utils"
+  }
+}

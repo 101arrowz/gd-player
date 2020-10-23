@@ -1,0 +1,13 @@
+{
+  "name": "Geometry Dash",
+  "theme": "#004ab9",
+  "genIconOpts": {
+    "baseIcon": "./src/assets/icon.png",
+    "sizes": [128, 192, 512],
+    "genFavicons": true,
+    "atip": 0,
+    "atib": "#fff50d",
+    "msTileColor": "#fff50d",
+    "resize": "contain"
+  }
+}

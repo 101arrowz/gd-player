@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/sw.ts"]
+}
