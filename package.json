@@ -4,9 +4,11 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^14.14.2",
+    "@types/plist": "^3.0.2",
     "parcel": "^2.0.0-nightly.429",
     "parcel-config-precache-manifest": "^0.0.2",
     "parcel-config-pwa-manifest": "^0.0.8",
+    "plist": "^3.0.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "ts-node": "^9.0.0",
@@ -19,6 +21,7 @@
   "dependencies": {
     "fflate": "^0.3.1",
     "gd.js": "^0.2.6",
+    "pixi-particles": "^4.3.0",
     "pixi.js": "^5.3.3",
     "preact": "^10.5.5"
   },
