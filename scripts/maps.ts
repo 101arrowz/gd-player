@@ -1105,4 +1105,13 @@ const modeMap: Record<string, string> = {
   spider: 'spider'
 };
 
-export { oidMap, btnMap, modeMap };
+// manually written
+const launchMap: Record<string, string> = {
+  GJ_lite_001: 'Lite',
+  GJ_logo_001: 'GD',
+  GJ_md_001: 'Meltdown',
+  RobTopLogoBig_001: 'RobTop',
+  gj_worldLogo_001: 'World'
+};
+
+export { oidMap, btnMap, modeMap, launchMap };
