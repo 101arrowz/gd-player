@@ -229,7 +229,7 @@ const build = () => {
             }
           }
           copyFileSync(from(nm + '.png'), c + '.png');
-          writeFileSync(c + '.json', JSON.stringify(out, null, 2));
+          writeFileSync(c + '.json', JSON.stringify(out));
         }
       }
     } else if (en == '.png') {

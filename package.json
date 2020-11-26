@@ -23,7 +23,7 @@
   "scripts": {
     "start": "yarn build:assets && parcel serve src/index.html",
     "lint": "eslint --fix \"src/**/*.ts\" \"scripts/*.ts\"",
-    "sc": "node -r ts-node/register scripts/$SC.ts",
+    "sc": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\": \\\"CommonJS\\\"}\" node -r ts-node/register scripts/$SC.ts",
     "build:assets": "SC=copyAssets yarn sc",
     "build": "yarn build:assets && parcel build src/index.html"
   },
