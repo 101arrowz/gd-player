@@ -10,5 +10,7 @@
     "msTileColor": "#fff50d",
     "resize": "contain"
   },
-  "disabled": true
+  "development": {
+    "disabled": true
+  }
 }

@@ -21,14 +21,15 @@
     "typescript": "^4.0.3"
   },
   "scripts": {
-    "start": "parcel serve src/index.html",
+    "start": "yarn build:assets && parcel serve src/index.html",
     "lint": "eslint --fix \"src/**/*.ts\" \"scripts/*.ts\"",
-    "build": "parcel build src/index.html",
-    "build:assets": "node -r ts-node/register scripts/buildAssets.ts"
+    "sc": "node -r ts-node/register scripts/$SC.ts",
+    "build:assets": "SC=copyAssets yarn sc",
+    "build": "yarn build:assets && parcel build src/index.html"
   },
   "dependencies": {
     "fflate": "^0.3.1",
-    "gd.js": "^0.2.6",
+    "gd.js": "^0.2.7",
     "pixi.js": "^5.3.3",
     "preact": "^10.5.5"
   },

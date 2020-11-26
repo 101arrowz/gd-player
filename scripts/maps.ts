@@ -1114,4 +1114,10 @@ const launchMap: Record<string, string> = {
   gj_worldLogo_001: 'World'
 };
 
-export { oidMap, btnMap, modeMap, launchMap };
+const fntMap: Record<string, string> = {
+  gold: 'gold',
+  chat: 'chat',
+  big: 'base',
+};
+
+export { oidMap, btnMap, modeMap, launchMap, fntMap };
