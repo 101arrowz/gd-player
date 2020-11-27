@@ -18,7 +18,11 @@ let scene: Scene = 'loading';
 
 let sprites: ReadonlyArray<Sprite>;
 
-let onRender: ((delta: number) => void) | null;
+let onRender: ((delta: number) => void) | null = () => {};
+
+Promise.resolve(scenes[scene].init()).then(() => {
+  onRender = null;
+});
 
 export default (stage: Container, delta: number) => {
   if (onRender) {

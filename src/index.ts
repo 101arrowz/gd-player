@@ -26,7 +26,10 @@ window.addEventListener('resize', () => {
 
 document.body.appendChild(renderer.view);
 
+let lastTime = performance.now();
+
 const render = () => {
+  const newTime = performance.now();
   renderer.render(stage);
   if (resized) {
     renderer.resize(window.innerWidth, window.innerHeight);

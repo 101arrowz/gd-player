@@ -1,25 +1,11 @@
 export type ProgressHandler = (bytes: number, bytesTotal: number) => void;
-export type JSONData =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONData[]
-  | {
-      [key: string]: JSONData;
-    };
-type DLJQ = {
+export type DownloadQuery = string | {
   url: string;
-  type: 'json';
+  type: 'text' | 'arraybuffer';
 };
-type DLAQ = {
-  url: string;
-  type: 'arraybuffer';
-};
-export type DownloadQuery = string | DLJQ | DLAQ;
 
 type DLR<T> = {
-  [K in keyof T]: Promise<T[K] extends DLJQ ? JSONData : ArrayBuffer>;
+  [K in keyof T]: Promise<T[K] extends { type: 'text' } ? string : ArrayBuffer>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -40,13 +26,7 @@ export default <T extends DownloadQuery[]>(
                 url: query,
                 type: 'arraybuffer' as const,
               }
-            : (query as DLAQ | DLJQ);
-
-        if (typeof query == 'string')
-          query = {
-            url: query,
-            type: 'arraybuffer',
-          };
+            : query as Exclude<DownloadQuery, string>
         const xhr = new XMLHttpRequest();
         let last = 0;
         xhr.onprogress = (ev) => {

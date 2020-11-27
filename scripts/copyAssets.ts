@@ -2,7 +2,7 @@ import { readdirSync, copyFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import build from './buildAssets';
 
-const asd = join(__dirname, '..', 'assets');
+const asd = join(__dirname, '..', 'src', 'assets');
 const oud = join(__dirname, '..', 'dist');
 if (!existsSync(oud)) {
   if (!existsSync(asd)) build();

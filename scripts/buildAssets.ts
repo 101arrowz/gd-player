@@ -22,8 +22,7 @@ type PixiSpriteSheet = {
   meta: Record<string, unknown>;
 };
 // assets dir
-const asd = join(__dirname, '..', 'assets');
-
+const asd = join(__dirname, '..', 'src', 'assets');
 const to = (...paths: string[]) => join(asd, ...paths);
 // resources dir
 const rsd =
@@ -260,6 +259,6 @@ const build = () => {
   }  
 }
 
-if (!require.main) build();
+if (require.main == module) build();
 
 export default build;
