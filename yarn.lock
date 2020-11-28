@@ -5581,12 +5581,12 @@ pako@~1.0.5:
   resolved "https://registry.yarnpkg.com/pako/-/pako-1.0.11.tgz#6c9599d340d54dfd3946380252a35705a6b992bf"
   integrity sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==
 
-parcel-config-precache-manifest@^0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/parcel-config-precache-manifest/-/parcel-config-precache-manifest-0.0.2.tgz#4407cbec8bd9c139213d61ee2379b043ebb984d2"
-  integrity sha512-rj75/0+N7ClYLtiWxAuFgIm2vdOuW0HUweja1JYMAqegBCPGluvh0zYIWEP+O201Rn/wbwSZIUfEg2hvYKkS1g==
+parcel-config-precache-manifest@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/parcel-config-precache-manifest/-/parcel-config-precache-manifest-0.0.3.tgz#972eff333aa20c651f98136cbe7a0879545f76dd"
+  integrity sha512-AODiRDI5fn+0A2jXpAtNIAdcTVm8Tq7DapMxoNP/XNgE7JwwEUxz1fCOG3sRMN+la7k4xOF2Dy/6a7qy2ScGtA==
   dependencies:
-    parcel-runtime-precache-manifest "^0.0.3"
+    parcel-runtime-precache-manifest "^0.0.4"
 
 parcel-config-pwa-manifest@^0.0.8:
   version "0.0.8"
@@ -5601,10 +5601,10 @@ parcel-namer-pwa-manifest@^0.0.2:
   resolved "https://registry.yarnpkg.com/parcel-namer-pwa-manifest/-/parcel-namer-pwa-manifest-0.0.2.tgz#dbbf7b3847955660964efadf83ca5d9e5ec3386a"
   integrity sha512-wkeX7FIpYSftloR9GqovBqRU7jNSfbzsE+19KCZscF3C8J3NgiSPYjwJ0D20L+F5DyabQKGfN2CFSEXtn8cX+g==
 
-parcel-runtime-precache-manifest@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/parcel-runtime-precache-manifest/-/parcel-runtime-precache-manifest-0.0.3.tgz#b4ee2d2e1bcd50f629432821332221b6c1152e04"
-  integrity sha512-R1VAeej4/C+MzVwncbSCKuron2Y+rBZStPPIAYlsM6B2wSG1gCGjf9DOftiP9iwJUrn0ijN8tzYaEQ+iOOJTqA==
+parcel-runtime-precache-manifest@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/parcel-runtime-precache-manifest/-/parcel-runtime-precache-manifest-0.0.4.tgz#b7d812b1c5f20219bc8a2c92339f61b4f9cdecfb"
+  integrity sha512-0p/DTNtRUqtjNQXoxSTGlBTTWIA99uS22uCED8jzCmPR/phLYGFLeuldzmmRzkn7XZpI1cFlbIkp49RoK0a9KQ==
 
 parcel-transformer-pwa-manifest@^0.0.8:
   version "0.0.8"

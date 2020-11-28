@@ -96,7 +96,6 @@ const build = () => {
     'backgrounds',
     'groundtiles',
     'sliders',
-    'explosions',
   ]) {
     const td = to(dir);
     if (!existsSync(td)) mkdirSync(td);
@@ -133,7 +132,7 @@ const build = () => {
         const bn = nm.slice(0, -4);
         let c = '';
         if (bn.startsWith('PlayerExplosion'))
-          c = to('explosions', +bn.slice(16, 18) + '');
+          c = to('spritesheets', 'explosion' + +bn.slice(16, 18));
         else if (bn.startsWith('GJ_GameSheet'))
           c = to(
             'spritesheets',

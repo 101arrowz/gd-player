@@ -1,4 +1,5 @@
 import { Renderer, Container, utils } from 'pixi.js';
+import addScene from './scenes';
 import './scenes'
 if (process.env.NODE_ENV === 'production') {
   if ('serviceWorker' in navigator) {
@@ -30,11 +31,14 @@ let lastTime = performance.now();
 
 const render = () => {
   const newTime = performance.now();
-  renderer.render(stage);
+  addScene(stage, newTime - lastTime);
+  lastTime = newTime;
   if (resized) {
     renderer.resize(window.innerWidth, window.innerHeight);
     resized = false;
   }
+  renderer.render(stage);
+
   requestAnimationFrame(render);
 };
 

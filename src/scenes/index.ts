@@ -18,15 +18,20 @@ let scene: Scene = 'loading';
 
 let sprites: ReadonlyArray<Sprite>;
 
-let onRender: ((delta: number) => void) | null = () => {};
-
-Promise.resolve(scenes[scene].init()).then(() => {
-  onRender = null;
+Promise.resolve(scenes[scene].init()).then(sp => {
+  sprites = sp;
 });
+
+let onRender: ((stage: Container, delta: number) => void) | null = stage => {
+  if (sprites) {
+    stage.addChild.apply(stage, sprites as Sprite[]);
+    onRender = null;
+  }
+};
 
 export default (stage: Container, delta: number) => {
   if (onRender) {
-    onRender(delta);
+    onRender(stage, delta);
     return;
   }
   const next = scenes[scene].render(sprites);
@@ -34,7 +39,7 @@ export default (stage: Container, delta: number) => {
     scene = next;
     let tol = 200;
     const opacs = sprites.map(s => s.alpha);
-    onRender = d => {
+    onRender = (stage, d) => {
       d = Math.min(d, tol);
       tol -= d;
       for (let i = 0; i < sprites.length; ++i) {
@@ -50,7 +55,7 @@ export default (stage: Container, delta: number) => {
           }
           let tl = 200;
           stage.addChild.apply(stage, sp as Sprite[]);
-          onRender = d => {
+          onRender = (_, d) => {
             d = Math.min(d, tl);
             tl -= d;
             for (let i = 0; i < sp.length; ++i) {
