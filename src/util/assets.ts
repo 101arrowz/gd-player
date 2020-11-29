@@ -80,14 +80,16 @@ const loadTextures = (urls: string[], onProgress?: ProgressHandler) => onProgres
   : urls.map(Texture.fromURL);
 
 export const freshLoadSheet = <T extends Sheet[]>(sheets: [...T], onProgress?: ProgressHandler) => 
-  loadTextures(sheets.map(sheet => 'spritesheets/' + sheet + '.png')).map((p, i) => p.then(t => {
+  loadTextures(sheets.map(sheet => 'spritesheets/' + sheet + '.png')).map(async (p, i) => {
+    const t = await p;
     const sheet = sheets[i];
     const ss = new Spritesheet(t, sheetMeta[sheet]);
+    await new Promise(res => ss.parse(res));
     for (const k in ss.textures) {
       textures[k.slice(0, -4)] = ss.textures[k];
     }
     delete sheetMeta[sheet];
-  })) as { [K in keyof T]: Promise<void> };
+  }) as { [K in keyof T]: Promise<void> };
 
 export const loadSheet = (sheets: Sheet[], onProgress: ProgressHandler) =>
   Promise.all(freshLoadSheet(sheets.filter(s => sheetMeta[s]), onProgress));

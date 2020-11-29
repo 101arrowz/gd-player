@@ -1,22 +1,19 @@
 import { Container, Sprite } from 'pixi.js';
-import { Init, Render } from './types';
-import * as loading from './loading';
+import Scene from './types';
+import loading from './loading';
 
 const scenes = {
   loading
 }
 
-export type Scene = keyof typeof scenes;
+// Limitation of TS does not allow us to do this normally
+export type SceneName = 'loading';
 
-const scenesAssert: Record<Scene, {
-  init: Init;
-  render: Render;
-}> = scenes;
+const scenesAssert: Record<SceneName, Scene<string | number>> = scenes;
 
+let scene: SceneName = 'loading';
 
-let scene: Scene = 'loading';
-
-let sprites: ReadonlyArray<Sprite>;
+let sprites: Record<string | number, Sprite>;
 
 Promise.resolve(scenes[scene].init()).then(sp => {
   sprites = sp;
@@ -24,7 +21,8 @@ Promise.resolve(scenes[scene].init()).then(sp => {
 
 let onRender: ((stage: Container, delta: number) => void) | null = stage => {
   if (sprites) {
-    stage.addChild.apply(stage, sprites as Sprite[]);
+    scenes[scene].render(sprites);
+    stage.addChild.apply(stage, Object.values(sprites));
     onRender = null;
   }
 };
@@ -38,28 +36,31 @@ export default (stage: Container, delta: number) => {
   if (next) {
     scene = next;
     let tol = 200;
-    const opacs = sprites.map(s => s.alpha);
+    const sparr = Object.values(sprites);
+    const opacs = sparr.map(s => s.alpha);
     onRender = (stage, d) => {
       d = Math.min(d, tol);
       tol -= d;
-      for (let i = 0; i < sprites.length; ++i) {
-        sprites[i].alpha -= d / 200 * opacs[i];
+      for (let i = 0; i < sparr.length; ++i) {
+        sparr[i].alpha -= d / 200 * opacs[i];
       }
       if (!tol) {
-        stage.removeChild.apply(stage, sprites as Sprite[]);
+        stage.removeChild.apply(stage, sparr);
         onRender = () => {};
         Promise.resolve(scenes[scene].init()).then(sp => {
-          const opacs = sp.map(s => s.alpha);
-          for (const s of sp) {
+          const sparr = Object.values(sp);
+          const opacs = sparr.map(s => s.alpha);
+          for (const s of sparr) {
             s.alpha = 0;
           }
           let tl = 200;
-          stage.addChild.apply(stage, sp as Sprite[]);
+          scenes[scene].render(sp);
+          stage.addChild.apply(stage, sparr);
           onRender = (_, d) => {
             d = Math.min(d, tl);
             tl -= d;
-            for (let i = 0; i < sp.length; ++i) {
-              sp[i].alpha += d / 200 * opacs[i];
+            for (let i = 0; i < sparr.length; ++i) {
+              sparr[i].alpha += d / 200 * opacs[i];
             }
             if (!tl) {
               sprites = sp;

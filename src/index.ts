@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'production') {
 const stage = new Container();
 const renderer = new Renderer({
   width: window.innerWidth,
-  height: window.innerHeight,
+  height: window.innerHeight
 });
 
 const hts = document.body.parentElement!.style;

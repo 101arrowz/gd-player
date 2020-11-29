@@ -1,8 +1,18 @@
-import { Sprite } from 'pixi.js';
-import { Scene } from '.';
+import { Sprite, TilingSprite } from 'pixi.js';
+import {freshLoadSheet, loadBGs, backgrounds} from '../util/assets';
+import { SceneName } from '.';
 
 type Async<T> = T | Promise<T>;
 
-export type Init = () => Async<ReadonlyArray<Sprite>>;
+export default class Scene<T extends string | number> {
+  constructor(methods: {
+    init(): Async<Record<T, Sprite>>,
+    render(sprites: Record<T, Sprite>): void | SceneName
+  }) {
+    this.init = methods.init;
+    this.render = methods.render;
+  }
 
-export type Render = (sprites: ReadonlyArray<Sprite>) => void | Scene;
+  init: () => Async<Record<T, Sprite>>;
+  render: (sprites: Record<T, Sprite>) => void | SceneName;
+}
