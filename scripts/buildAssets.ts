@@ -122,6 +122,7 @@ const build = () => {
         for (let i = 3; i < tc; ++i) {
           splt[i] = splt[i].replace(/ chnl=(.*)"/, '');
         }
+        splt.splice(tc, 1);
         writeFileSync(to('fonts', bn + '.fnt'), splt.join('\n'));
         // TODO: try to optimize the PNG?
         copyFileSync(from(nm + '.png'), to('fonts', imgNm));
@@ -145,7 +146,7 @@ const build = () => {
           const pl = parse(readFileSync(from(f), 'utf-8')) as GJSpriteSheet;
           const out: PixiSpriteSheet = {
             frames: {},
-            meta: {},
+            meta: { scale: 1 },
           };
           for (const k in pl.frames) {
             const fr = pl.frames[k];

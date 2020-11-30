@@ -1,18 +1,17 @@
-import { Sprite, TilingSprite } from 'pixi.js';
-import {freshLoadSheet, loadBGs, backgrounds} from '../util/assets';
+import { DisplayObject } from 'pixi.js';
 import { SceneName } from '.';
 
 type Async<T> = T | Promise<T>;
 
-export default class Scene<T extends string | number> {
+export default class Scene<T extends Record<string | number, DisplayObject>> {
   constructor(methods: {
-    init(): Async<Record<T, Sprite>>,
-    render(sprites: Record<T, Sprite>): void | SceneName
+    init(): Async<T>,
+    render(sprites: T, delta: number): void | SceneName
   }) {
     this.init = methods.init;
     this.render = methods.render;
   }
 
-  init: () => Async<Record<T, Sprite>>;
-  render: (sprites: Record<T, Sprite>) => void | SceneName;
+  init: () => Async<T>;
+  render: (sprites: T, delta: number) => void | SceneName;
 }

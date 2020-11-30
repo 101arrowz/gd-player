@@ -1,4 +1,5 @@
 import { Renderer, Container, utils } from 'pixi.js';
+import 'regenerator-runtime/runtime'
 import addScene from './scenes';
 import './scenes'
 if (process.env.NODE_ENV === 'production') {

@@ -38,6 +38,7 @@ import f11 from 'bundle-text:../assets/fonts/11.fnt';
 import fbase from 'bundle-text:../assets/fonts/base.fnt';
 import fchat from 'bundle-text:../assets/fonts/chat.fnt';
 import fgold from 'bundle-text:../assets/fonts/gold.fnt';
+import multiProgress from './multiProgress';
 
 const sheetMeta = {
   1: ss1,
@@ -66,7 +67,7 @@ const sheetMeta = {
   explosion16
 };
 
-type Sheet = keyof typeof sheetMeta;
+export type Sheet = keyof typeof sheetMeta;
 
 export const textures: Record<string, Texture> = {}
 
@@ -79,8 +80,8 @@ const loadTextures = (urls: string[], onProgress?: ProgressHandler) => onProgres
     }))
   : urls.map(Texture.fromURL);
 
-export const freshLoadSheet = <T extends Sheet[]>(sheets: [...T], onProgress?: ProgressHandler) => 
-  loadTextures(sheets.map(sheet => 'spritesheets/' + sheet + '.png')).map(async (p, i) => {
+export const freshLoadSheets = <T extends Sheet[]>(sheets: [...T], onProgress?: ProgressHandler) => 
+  loadTextures(sheets.map(sheet => 'spritesheets/' + sheet + '.png'), onProgress).map(async (p, i) => {
     const t = await p;
     const sheet = sheets[i];
     const ss = new Spritesheet(t, sheetMeta[sheet]);
@@ -91,10 +92,10 @@ export const freshLoadSheet = <T extends Sheet[]>(sheets: [...T], onProgress?: P
     delete sheetMeta[sheet];
   }) as { [K in keyof T]: Promise<void> };
 
-export const loadSheet = (sheets: Sheet[], onProgress: ProgressHandler) =>
-  Promise.all(freshLoadSheet(sheets.filter(s => sheetMeta[s]), onProgress));
+export const loadSheets = (sheets: Sheet[], onProgress?: ProgressHandler) =>
+  Promise.all(freshLoadSheets(sheets.filter(s => sheetMeta[s]), onProgress));
 
-type BG = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
+export type BG = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
 
 export const backgrounds = {} as Record<BG, Texture>;
 
@@ -125,12 +126,12 @@ const fontMeta = {
   gold: fgold
 };
 
-type Font = keyof typeof fontMeta;
+export type Font = keyof typeof fontMeta;
 
-export const loadFonts = (fonts: Font[]) => {
+export const loadFonts = (fonts: Font[], onProgress?: ProgressHandler) => {
   fonts = fonts.filter(f => fontMeta[f]);
-  Promise.all(
-    loadTextures(fonts.map(f => 'fonts/' + f + '.png'))
+  return Promise.all(
+    loadTextures(fonts.map(f => 'fonts/' + f + '.png'), onProgress)
       .map((p, i) => p.then(t => {
         const font = fonts[i];
         BitmapFont.install(fontMeta[font], t);
@@ -140,7 +141,7 @@ export const loadFonts = (fonts: Font[]) => {
 }
 
 
-type GroundTile = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+export type GroundTile = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
 
 export const groundTiles = {} as Record<GroundTile, [Texture, Texture | null]>;
 
@@ -161,7 +162,7 @@ export const loadGroundTiles = (tiles: GroundTile[], onProgress?: ProgressHandle
   });
 }
 
-type Slider = 0 | 1;
+export type Slider = 0 | 1;
 
 export const sliders = {} as Record<Slider, [Texture, Texture]>;
 
@@ -175,7 +176,26 @@ export const loadSliders = (sls: Slider[], onProgress?: ProgressHandler) => {
   }
   return Promise.all(loadTextures(toLoad, onProgress)).then(ts => {
     for (let i = 0; i < ts.length; i += 2) {
-      sliders[sls[i >> 1]] = [ts[i], ts[i + 1]];
+      sliders[sls[i >> 1]] = [ts[i + 1], ts[i]];
     }
   });
 }
+
+export type MultiLoad = {
+  sheets?: Sheet[];
+  bgs?: BG[];
+  fonts?: Font[];
+  groundTiles?: GroundTile[];
+  sliders?: Slider[];
+};
+
+export const multiLoad = ({ sheets, bgs, fonts, groundTiles, sliders }: MultiLoad, onProgress?: ProgressHandler) => {
+  const createProgress = onProgress ? multiProgress(onProgress) : ((() => {}) as () => undefined);
+  const proms: Promise<unknown>[] = [];
+  if (sheets) proms.push(loadSheets(sheets, createProgress()));
+  if (bgs) proms.push(loadBGs(bgs, createProgress()));
+  if (fonts) proms.push(loadFonts(fonts, createProgress()));
+  if (groundTiles) proms.push(loadGroundTiles(groundTiles, createProgress()));
+  if (sliders) proms.push(loadSliders(sliders, createProgress()));
+  return Promise.all(proms);
+};

@@ -1,5 +1,4 @@
-import { Container, Sprite } from 'pixi.js';
-import Scene from './types';
+import { Container, DisplayObject, Sprite } from 'pixi.js';
 import loading from './loading';
 
 const scenes = {
@@ -9,11 +8,9 @@ const scenes = {
 // Limitation of TS does not allow us to do this normally
 export type SceneName = 'loading';
 
-const scenesAssert: Record<SceneName, Scene<string | number>> = scenes;
-
 let scene: SceneName = 'loading';
 
-let sprites: Record<string | number, Sprite>;
+let sprites: Record<string | number, DisplayObject>;
 
 Promise.resolve(scenes[scene].init()).then(sp => {
   sprites = sp;
@@ -21,7 +18,7 @@ Promise.resolve(scenes[scene].init()).then(sp => {
 
 let onRender: ((stage: Container, delta: number) => void) | null = stage => {
   if (sprites) {
-    scenes[scene].render(sprites);
+    scenes[scene].render(sprites as Parameters<(typeof scenes)[typeof scene]['render']>[0], 0);
     stage.addChild.apply(stage, Object.values(sprites));
     onRender = null;
   }
@@ -32,7 +29,7 @@ export default (stage: Container, delta: number) => {
     onRender(stage, delta);
     return;
   }
-  const next = scenes[scene].render(sprites);
+  const next = scenes[scene].render(sprites as Parameters<(typeof scenes)[typeof scene]['render']>[0], delta);
   if (next) {
     scene = next;
     let tol = 200;
@@ -54,7 +51,7 @@ export default (stage: Container, delta: number) => {
             s.alpha = 0;
           }
           let tl = 200;
-          scenes[scene].render(sp);
+          scenes[scene].render(sp, 0);
           stage.addChild.apply(stage, sparr);
           onRender = (_, d) => {
             d = Math.min(d, tl);
