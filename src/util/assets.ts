@@ -64,50 +64,112 @@ const sheetMeta = {
   explosion13,
   explosion14,
   explosion15,
-  explosion16
+  explosion16,
 };
 
 export type Sheet = keyof typeof sheetMeta;
 
-export const textures: Record<string, Texture> = {}
+export const textures: Record<string, Texture> = {};
 
-const loadTextures = (urls: string[], onProgress?: ProgressHandler) => onProgress
-  ? dl(urls, onProgress).map(p => p.then(buf => {
-      const url = URL.createObjectURL(
-        new Blob([buf], { type: 'image/png' })
-      );
-      return Texture.fromURL(url);
-    }))
-  : urls.map(Texture.fromURL);
+const loadTextures = (
+  urls: string[],
+  onProgress?: ProgressHandler
+): Promise<Texture>[] =>
+  onProgress
+    ? dl(urls, onProgress).map((p) =>
+        p.then(async (buf) => {
+          const url = URL.createObjectURL(
+            new Blob([buf], { type: 'image/png' })
+          );
+          const tt = await Texture.fromURL(url);
+          URL.revokeObjectURL(url);
+          return tt;
+        })
+      )
+    : urls.map(Texture.fromURL);
 
-export const freshLoadSheets = <T extends Sheet[]>(sheets: [...T], onProgress?: ProgressHandler) => 
-  loadTextures(sheets.map(sheet => 'spritesheets/' + sheet + '.png'), onProgress).map(async (p, i) => {
+export const freshLoadSheets = <T extends Sheet[]>(
+  sheets: [...T],
+  onProgress?: ProgressHandler
+): { [K in keyof T]: Promise<void> } =>
+  loadTextures(
+    sheets
+      .filter((s) => sheetMeta[s])
+      .map((sheet) => 'spritesheets/' + sheet + '.png'),
+    onProgress
+  ).map(async (p, i) => {
     const t = await p;
     const sheet = sheets[i];
     const ss = new Spritesheet(t, sheetMeta[sheet]);
-    await new Promise(res => ss.parse(res));
+    await new Promise((res) => ss.parse(res));
     for (const k in ss.textures) {
       textures[k.slice(0, -4)] = ss.textures[k];
     }
     delete sheetMeta[sheet];
   }) as { [K in keyof T]: Promise<void> };
 
-export const loadSheets = (sheets: Sheet[], onProgress?: ProgressHandler) =>
-  Promise.all(freshLoadSheets(sheets.filter(s => sheetMeta[s]), onProgress));
+export const loadSheets = (
+  sheets: Sheet[],
+  onProgress?: ProgressHandler
+): Promise<void> =>
+  Promise.all(
+    loadTextures(
+      sheets
+        .filter((s) => sheetMeta[s])
+        .map((sheet) => 'spritesheets/' + sheet + '.png'),
+      onProgress
+    ).map(async (p, i) => {
+      const t = await p;
+      const sheet = sheets[i];
+      const ss = new Spritesheet(t, sheetMeta[sheet]);
+      await new Promise((res) => ss.parse(res));
+      for (const k in ss.textures) {
+        textures[k.slice(0, -4)] = ss.textures[k];
+      }
+      delete sheetMeta[sheet];
+    })
+  ).then();
 
-export type BG = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
+export type BG =
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15
+  | 16
+  | 17
+  | 18
+  | 19
+  | 20;
 
 export const backgrounds = {} as Record<BG, Texture>;
 
-export const loadBGs = (bgs: BG[], onProgress?: ProgressHandler) =>
+export const loadBGs = (
+  bgs: BG[],
+  onProgress?: ProgressHandler
+): Promise<void> =>
   Promise.all(
     loadTextures(
-      bgs.filter(bg => !backgrounds[bg]).map(bg => 'backgrounds/' + bg + '.png'),
+      bgs
+        .filter((bg) => !backgrounds[bg])
+        .map((bg) => 'backgrounds/' + bg + '.png'),
       onProgress
-    ).map((p, i) => p.then(t => {
-      backgrounds[bgs[i]] = t;
-    }))
-  );
+    ).map((p, i) =>
+      p.then((t) => {
+        backgrounds[bgs[i]] = t;
+      })
+    )
+  ).then();
 
 const fontMeta = {
   1: f1,
@@ -123,30 +185,56 @@ const fontMeta = {
   11: f11,
   base: fbase,
   chat: fchat,
-  gold: fgold
+  gold: fgold,
 };
 
 export type Font = keyof typeof fontMeta;
 
-export const loadFonts = (fonts: Font[], onProgress?: ProgressHandler) => {
-  fonts = fonts.filter(f => fontMeta[f]);
+export const loadFonts = (
+  fonts: Font[],
+  onProgress?: ProgressHandler
+): Promise<void> => {
+  fonts = fonts.filter((f) => fontMeta[f]);
   return Promise.all(
-    loadTextures(fonts.map(f => 'fonts/' + f + '.png'), onProgress)
-      .map((p, i) => p.then(t => {
+    loadTextures(
+      fonts.map((f) => 'fonts/' + f + '.png'),
+      onProgress
+    ).map((p, i) =>
+      p.then((t) => {
         const font = fonts[i];
         BitmapFont.install(fontMeta[font], t);
         delete fontMeta[font];
-      }))
-  );
-}
+      })
+    )
+  ).then();
+};
 
-
-export type GroundTile = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+export type GroundTile =
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15
+  | 16
+  | 17;
 
 export const groundTiles = {} as Record<GroundTile, [Texture, Texture | null]>;
 
-export const loadGroundTiles = (tiles: GroundTile[], onProgress?: ProgressHandler) => {
-  tiles = tiles.filter(t => !groundTiles[t]);
+export const loadGroundTiles = (
+  tiles: GroundTile[],
+  onProgress?: ProgressHandler
+): Promise<void> => {
+  tiles = tiles.filter((t) => !groundTiles[t]);
   const toLoad: string[] = [];
   for (const tile of tiles) {
     toLoad.push('groundtiles/' + tile + '.png');
@@ -154,32 +242,37 @@ export const loadGroundTiles = (tiles: GroundTile[], onProgress?: ProgressHandle
       toLoad.push('groundtiles/' + tile + '.2.png');
     }
   }
-  return Promise.all(loadTextures(toLoad, onProgress)).then(ts => {
-    for (let i = 0, bk = 0; i < ts.length; ++i) {
-      const tile = tiles[i - bk];
-      groundTiles[tile] = [ts[i], tile > 7 ? (++bk, ts[++i]) : null];
-    }
-  });
-}
+  return Promise.all(loadTextures(toLoad, onProgress))
+    .then((ts) => {
+      for (let i = 0, bk = 0; i < ts.length; ++i) {
+        const tile = tiles[i - bk];
+        groundTiles[tile] = [ts[i], tile > 7 ? (++bk, ts[++i]) : null];
+      }
+    })
+    .then();
+};
 
 export type Slider = 0 | 1;
 
 export const sliders = {} as Record<Slider, [Texture, Texture]>;
 
-export const loadSliders = (sls: Slider[], onProgress?: ProgressHandler) => {
-  sls = sls.filter(s => !sliders[s]);
+export const loadSliders = (
+  sls: Slider[],
+  onProgress?: ProgressHandler
+): Promise<void> => {
+  sls = sls.filter((s) => !sliders[s]);
   const toLoad = Array<string>(sls.length * 2);
   for (let i = 0; i < sls.length; ++i) {
     const slider = sls[i];
     toLoad[i * 2] = 'sliders/' + slider + '.png';
     toLoad[i * 2 + 1] = 'sliders/' + slider + '.groove.png';
   }
-  return Promise.all(loadTextures(toLoad, onProgress)).then(ts => {
+  return Promise.all(loadTextures(toLoad, onProgress)).then((ts) => {
     for (let i = 0; i < ts.length; i += 2) {
       sliders[sls[i >> 1]] = [ts[i + 1], ts[i]];
     }
   });
-}
+};
 
 export type MultiLoad = {
   sheets?: Sheet[];
@@ -189,13 +282,18 @@ export type MultiLoad = {
   sliders?: Slider[];
 };
 
-export const multiLoad = ({ sheets, bgs, fonts, groundTiles, sliders }: MultiLoad, onProgress?: ProgressHandler) => {
-  const createProgress = onProgress ? multiProgress(onProgress) : ((() => {}) as () => undefined);
+export const multiLoad = (
+  { sheets, bgs, fonts, groundTiles, sliders }: MultiLoad,
+  onProgress?: ProgressHandler
+): Promise<void> => {
+  const createProgress = onProgress
+    ? multiProgress(onProgress)
+    : ((() => {}) as () => undefined);
   const proms: Promise<unknown>[] = [];
   if (sheets) proms.push(loadSheets(sheets, createProgress()));
   if (bgs) proms.push(loadBGs(bgs, createProgress()));
   if (fonts) proms.push(loadFonts(fonts, createProgress()));
   if (groundTiles) proms.push(loadGroundTiles(groundTiles, createProgress()));
   if (sliders) proms.push(loadSliders(sliders, createProgress()));
-  return Promise.all(proms);
+  return Promise.all(proms).then();
 };

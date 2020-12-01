@@ -1,7 +1,7 @@
 import { Renderer, Container, utils } from 'pixi.js';
-import 'regenerator-runtime/runtime'
+import 'regenerator-runtime/runtime';
 import addScene from './scenes';
-import './scenes'
+import './scenes';
 if (process.env.NODE_ENV === 'production') {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.ts');
@@ -11,7 +11,7 @@ if (process.env.NODE_ENV === 'production') {
 const stage = new Container();
 const renderer = new Renderer({
   width: window.innerWidth,
-  height: window.innerHeight
+  height: window.innerHeight,
 });
 
 const hts = document.body.parentElement!.style;

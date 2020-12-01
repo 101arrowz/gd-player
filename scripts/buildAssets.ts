@@ -88,7 +88,7 @@ type SSV = number[] | SSV[];
 const parseSSV = (v: string): SSV =>
   JSON.parse(v.replace(/{/g, '[').replace(/}/g, ']'));
 
-const build = () => {
+const build = (): void => {
   for (const dir of [
     '.',
     'fonts',
@@ -100,7 +100,7 @@ const build = () => {
     const td = to(dir);
     if (!existsSync(td)) mkdirSync(td);
   }
-  
+
   for (const f of readdirSync(rsd)) {
     const en = extname(f);
     if (en == '.fnt') {
@@ -112,10 +112,7 @@ const build = () => {
         const dat = readFileSync(from(f), 'utf-8');
         const splt = dat.split('\n').map((v) => v.replace(/\s\s+/g, ' '));
         splt[0] =
-          splt[0].replace(
-            /face="(.*)/,
-            'face="' + bn + '"'
-          ) + ' size=24';
+          splt[0].replace(/face="(.*)/, 'face="' + bn + '"') + ' size=24';
         splt[1] = splt[1].replace(/ base=(.*)/, '');
         splt[2] = splt[2].replace(/file="(.*)/, 'file="' + imgNm + '"');
         const tc = parseInt(splt[3].slice(12)) + 4;
@@ -199,7 +196,10 @@ const build = () => {
                 key
               )
             ) {
-              const ki = key.indexOf('_', key.startsWith('player_ball') ? 11 : 0),
+              const ki = key.indexOf(
+                  '_',
+                  key.startsWith('player_ball') ? 11 : 0
+                ),
                 nm = modeMap[key.slice(0, ki)],
                 tk = key
                   .slice(ki + 1)
@@ -250,14 +250,14 @@ const build = () => {
         else if (bn.startsWith('slider')) {
           const s = bn.slice(6);
           if (s.startsWith('Bar'))
-            copyFileSync(from(f), to('sliders', (s.length - 3) + '.png'));
+            copyFileSync(from(f), to('sliders', s.length - 3 + '.png'));
           else if (s.startsWith('groove') && s[6] != '_')
-            copyFileSync(from(f), to('sliders', (s.length - 6) + '.groove.png'));
+            copyFileSync(from(f), to('sliders', s.length - 6 + '.groove.png'));
         }
       }
     }
-  }  
-}
+  }
+};
 
 if (require.main == module) build();
 

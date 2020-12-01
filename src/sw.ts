@@ -16,9 +16,7 @@ const cache = () => caches.open(precacheVersion);
 
 sw.addEventListener('install', (ev) => {
   // Do not finish installing until every file in the app has been cached
-  ev.waitUntil(
-    cache().then((cache) => cache.addAll(precacheFiles))
-  );
+  ev.waitUntil(cache().then((cache) => cache.addAll(precacheFiles)));
 });
 
 // Optionally, to clear previous precaches, also use the following:
@@ -34,11 +32,17 @@ sw.addEventListener('activate', (ev) => {
   );
 });
 
-sw.addEventListener('fetch', ev => {
-  ev.respondWith(cache().then(c => c.match(ev.request).then(
-    res => res || fetch(ev.request).then(res => {
-      c.put(ev.request, res.clone());
-      return res;
-    })
-  )));
+sw.addEventListener('fetch', (ev) => {
+  ev.respondWith(
+    cache().then((c) =>
+      c.match(ev.request).then(
+        (res) =>
+          res ||
+          fetch(ev.request).then((res) => {
+            c.put(ev.request, res.clone());
+            return res;
+          })
+      )
+    )
+  );
 });

@@ -1,71 +1,76 @@
-import { Container, DisplayObject, Sprite } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 import loading from './loading';
+import home from './home';
 
 const scenes = {
-  loading
-}
+  loading,
+  home,
+};
 
 // Limitation of TS does not allow us to do this normally
-export type SceneName = 'loading';
+export type SceneName = 'loading' | 'home';
 
 let scene: SceneName = 'loading';
 
-let sprites: Record<string | number, DisplayObject>;
-
-Promise.resolve(scenes[scene].init()).then(sp => {
+let sprites: Parameters<typeof scenes[typeof scene]['render']>[0];
+const blackSprite = new Sprite(
+  Texture.fromBuffer(new Uint8Array([0, 0, 0, 255]), 1, 1)
+);
+blackSprite.alpha = 0;
+Promise.resolve(scenes[scene].init()).then((sp) => {
   sprites = sp;
 });
 
-let onRender: ((stage: Container, delta: number) => void) | null = stage => {
+let onRender: ((stage: Container, delta: number) => void) | null = (stage) => {
   if (sprites) {
-    scenes[scene].render(sprites as Parameters<(typeof scenes)[typeof scene]['render']>[0], 0);
-    stage.addChild.apply(stage, Object.values(sprites));
+    scenes[scene].render(sprites, 0);
+    for (const i in sprites) {
+      stage.addChild(sprites[i as keyof typeof sprites]);
+    }
     onRender = null;
   }
 };
 
-export default (stage: Container, delta: number) => {
+export default (stage: Container, delta: number): void => {
   if (onRender) {
     onRender(stage, delta);
     return;
   }
-  const next = scenes[scene].render(sprites as Parameters<(typeof scenes)[typeof scene]['render']>[0], delta);
+  const next = scenes[scene].render(sprites, delta);
   if (next) {
     scene = next;
     let tol = 200;
-    const sparr = Object.values(sprites);
-    const opacs = sparr.map(s => s.alpha);
+    stage.addChild(blackSprite);
+    blackSprite.width = window.innerWidth;
+    blackSprite.height = window.innerHeight;
     onRender = (stage, d) => {
+      blackSprite.width = window.innerWidth;
+      blackSprite.height = window.innerHeight;
       d = Math.min(d, tol);
       tol -= d;
-      for (let i = 0; i < sparr.length; ++i) {
-        sparr[i].alpha -= d / 200 * opacs[i];
-      }
+      blackSprite.alpha += d / 200;
       if (!tol) {
-        stage.removeChild.apply(stage, sparr);
+        stage.removeChildren();
         onRender = () => {};
-        Promise.resolve(scenes[scene].init()).then(sp => {
-          const sparr = Object.values(sp);
-          const opacs = sparr.map(s => s.alpha);
-          for (const s of sparr) {
-            s.alpha = 0;
-          }
+        Promise.resolve(scenes[scene].init()).then((sp) => {
           let tl = 200;
-          scenes[scene].render(sp, 0);
-          stage.addChild.apply(stage, sparr);
+          scenes[scene].render(sp as typeof sprites, 0);
+          for (const i in sp) {
+            stage.addChild(sp[i as keyof typeof sp]);
+          }
+          stage.addChild(blackSprite);
           onRender = (_, d) => {
             d = Math.min(d, tl);
             tl -= d;
-            for (let i = 0; i < sparr.length; ++i) {
-              sparr[i].alpha += d / 200 * opacs[i];
-            }
+            blackSprite.alpha -= d / 200;
             if (!tl) {
-              sprites = sp;
+              stage.removeChild(blackSprite);
+              sprites = sp as typeof sprites;
               onRender = null;
             }
-          }
+          };
         });
       }
-    }
+    };
   }
-}
+};

@@ -1,8 +1,10 @@
 export type ProgressHandler = (bytes: number, bytesTotal: number) => void;
-export type DownloadQuery = string | {
-  url: string;
-  type: 'text' | 'arraybuffer';
-};
+export type DownloadQuery =
+  | string
+  | {
+      url: string;
+      type: 'text' | 'arraybuffer';
+    };
 
 type DLR<T> = {
   [K in keyof T]: Promise<T[K] extends { type: 'text' } ? string : ArrayBuffer>;
@@ -26,7 +28,7 @@ export default <T extends DownloadQuery[]>(
                 url: query,
                 type: 'arraybuffer' as const,
               }
-            : query as Exclude<DownloadQuery, string>
+            : (query as Exclude<DownloadQuery, string>);
         const xhr = new XMLHttpRequest();
         let last = 0;
         xhr.onprogress = (ev) => {
@@ -34,10 +36,10 @@ export default <T extends DownloadQuery[]>(
           if (!ev.lengthComputable) bytesTotal += add;
           onProgress((bytesReceived += add), bytesTotal);
           last = ev.loaded;
-        }
+        };
         xhr.onreadystatechange = () => {
           if (xhr.readyState == xhr.HEADERS_RECEIVED) {
-            +xhr.getResponseHeader('Content-Length')!
+            +xhr.getResponseHeader('Content-Length')!;
             bytesTotal += +xhr.getResponseHeader('Content-Length')!;
           }
         };
