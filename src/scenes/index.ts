@@ -1,10 +1,11 @@
 import { Container, Sprite, Texture } from 'pixi.js';
+import { BaseSpriteMap } from './scene';
 import loading from './loading';
 import home from './home';
 
 const scenes = {
   loading,
-  home,
+  home
 };
 
 // Limitation of TS does not allow us to do this normally
@@ -12,18 +13,24 @@ export type SceneName = 'loading' | 'home';
 
 let scene: SceneName = 'loading';
 
-let sprites: Parameters<typeof scenes[typeof scene]['render']>[0];
-const blackSprite = new Sprite(
-  Texture.fromBuffer(new Uint8Array([0, 0, 0, 255]), 1, 1)
-);
+type Intersect<U> = 
+  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
+
+
+let sprites: BaseSpriteMap;
+const blackSprite = new Sprite(Texture.fromBuffer(new Uint8Array([0, 0, 0, 255]), 1, 1));
 blackSprite.alpha = 0;
 Promise.resolve(scenes[scene].init()).then((sp) => {
   sprites = sp;
 });
 
+
 let onRender: ((stage: Container, delta: number) => void) | null = (stage) => {
   if (sprites) {
-    scenes[scene].render(sprites, 0);
+    scenes[scene].render(
+      sprites as Intersect<Parameters<typeof scenes[typeof scene]['render']>[0]>,
+      0
+    );
     for (const i in sprites) {
       stage.addChild(sprites[i as keyof typeof sprites]);
     }
@@ -36,7 +43,10 @@ export default (stage: Container, delta: number): void => {
     onRender(stage, delta);
     return;
   }
-  const next = scenes[scene].render(sprites, delta);
+  const next = scenes[scene].render(
+    sprites as Intersect<Parameters<typeof scenes[typeof scene]['render']>[0]>,
+    delta
+  );
   if (next) {
     scene = next;
     let tol = 200;
@@ -54,7 +64,7 @@ export default (stage: Container, delta: number): void => {
         onRender = () => {};
         Promise.resolve(scenes[scene].init()).then((sp) => {
           let tl = 200;
-          scenes[scene].render(sp as typeof sprites, 0);
+          scenes[scene].render(sp as Intersect<Parameters<typeof scenes[typeof scene]['render']>[0]>, 0);
           for (const i in sp) {
             stage.addChild(sp[i as keyof typeof sp]);
           }
@@ -65,7 +75,7 @@ export default (stage: Container, delta: number): void => {
             blackSprite.alpha -= d / 200;
             if (!tl) {
               stage.removeChild(blackSprite);
-              sprites = sp as typeof sprites;
+              sprites = sp;
               onRender = null;
             }
           };

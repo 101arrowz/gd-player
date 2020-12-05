@@ -1,8 +1,12 @@
-import Scene from '../types';
+import Scene from '../scene';
+import { loadSheets } from '../../util';
+import { Sprite } from 'pixi.js';
 
 export default new Scene({
-  init() {
-    return {};
+  async init() {
+    
+    return {
+    };
   },
   render() {},
 });

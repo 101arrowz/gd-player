@@ -8,7 +8,7 @@ import {
   ProgressHandler,
   store,
 } from '../../util';
-import Scene from '../types';
+import Scene from '../scene';
 
 let resolvedBytes = 0,
   resolvedBytesTotal = 0;
@@ -86,36 +86,38 @@ const loadingMessages = [
 
 const preloads: MultiLoad[] = [
   {
-    sheets: [1, 'glow', 'gauntlet', 'fire'],
+    sheets: [1, 2, 'glow'],
     sliders: [1],
     bgs: [2, 3, 4],
     groundTiles: [2, 3, 4],
   },
   {
-    sheets: ['explosion1', 'explosion2', 'explosion3'],
+    sheets: ['gauntlet', 'fire'],
     bgs: [5, 6, 7],
     groundTiles: [5, 6, 7],
     fonts: [1, 2, 3],
   },
   {
-    sheets: ['explosion4', 'explosion5', 'explosion6'],
+    sheets: ['explosion1', 'explosion2', 'explosion3', 'explosion4'],
     bgs: [8, 9, 10],
     groundTiles: [8, 9, 10],
     fonts: [4, 5, 6, 7, 8, 9, 10, 11],
   },
   {
     sheets: [
+      'explosion5',
+      'explosion6',
       'explosion7',
       'explosion8',
       'explosion9',
       'explosion10',
-      'explosion11',
     ],
     bgs: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
     groundTiles: [11, 12, 13, 14, 15, 16, 17],
   },
   {
     sheets: [
+      'explosion11',
       'explosion12',
       'explosion13',
       'explosion14',
@@ -139,9 +141,7 @@ export default new Scene({
       sliders: [0],
     });
     const bg = new TilingSprite(
-      backgrounds[1],
-      window.innerWidth,
-      window.innerHeight
+      backgrounds[1]
     );
     const logo = new Sprite(textures.logoGD);
     const robLogo = new Sprite(textures.logoRobTop);
@@ -198,6 +198,7 @@ export default new Scene({
     robLogo.x = window.innerWidth / 2;
     robLogo.y = window.innerHeight / 4;
     const sliderFill = slider.children[0] as TilingSprite;
+    sliderFill.texture.baseTexture.setResolution(1000 / window.innerWidth);
     sliderFill.x = Math.min(
       window.innerWidth * 0.01,
       window.innerHeight * 0.02
