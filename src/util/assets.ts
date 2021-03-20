@@ -88,47 +88,32 @@ const loadTextures = (
       )
     : urls.map(Texture.fromURL);
 
-export const freshLoadSheets = <T extends Sheet[]>(
-  sheets: [...T],
+export const loadSheets = (
+  sheets: Sheet[],
   onProgress?: ProgressHandler
-): { [K in keyof T]: Promise<void> } =>
-  loadTextures(
-    sheets
-      .filter((s) => sheetMeta[s])
-      .map((sheet) => 'spritesheets/' + sheet + '.png'),
+): Promise<void> => {
+  const meta: Partial<Record<Sheet, unknown>> = {};
+  for (let i = 0; i < sheets.length; ++i) {
+    const sheet = sheets[i];
+    const sm = sheetMeta[sheet];
+    if (sm) {
+      meta[sheet] = sm;
+      delete sheetMeta[sheet];
+    } else sheets.splice(i--);
+  }
+  return Promise.all(loadTextures(
+    sheets.map(s => 'spritesheets/' + s + '.png'),
     onProgress
   ).map(async (p, i) => {
     const t = await p;
     const sheet = sheets[i];
-    const ss = new Spritesheet(t, sheetMeta[sheet]);
+    const ss = new Spritesheet(t, meta[sheet]);
     await new Promise((res) => ss.parse(res));
     for (const k in ss.textures) {
       textures[k.slice(0, -4)] = ss.textures[k];
     }
-    delete sheetMeta[sheet];
-  }) as { [K in keyof T]: Promise<void> };
-
-export const loadSheets = (
-  sheets: Sheet[],
-  onProgress?: ProgressHandler
-): Promise<void> =>
-  Promise.all(
-    loadTextures(
-      sheets
-        .filter((s) => sheetMeta[s])
-        .map((sheet) => 'spritesheets/' + sheet + '.png'),
-      onProgress
-    ).map(async (p, i) => {
-      const t = await p;
-      const sheet = sheets[i];
-      const ss = new Spritesheet(t, sheetMeta[sheet]);
-      await new Promise((res) => ss.parse(res));
-      for (const k in ss.textures) {
-        textures[k.slice(0, -4)] = ss.textures[k];
-      }
-      delete sheetMeta[sheet];
-    })
-  ).then();
+  })).then();
+}
 
 export type BG =
   | 1

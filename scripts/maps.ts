@@ -1086,7 +1086,6 @@ const oidMap: Record<string, number[]> = {
   emptyFrame: [1886, 1887, 1888]
 };
 
-// manually written
 const btnMap: Record<string, string> = {
   GJ_challengeBtn_001: 'Quests',
   GJ_fameBtn_001: 'HOF',
@@ -1094,7 +1093,6 @@ const btnMap: Record<string, string> = {
   GJ_mapPacksBtn_001: 'Packs'
 };
 
-// manually written
 const modeMap: Record<string, string> = {
   player: 'cube',
   ship: 'ship',
@@ -1105,7 +1103,6 @@ const modeMap: Record<string, string> = {
   spider: 'spider'
 };
 
-// manually written
 const launchMap: Record<string, string> = {
   GJ_lite_001: 'Lite',
   GJ_logo_001: 'GD',
@@ -1120,4 +1117,15 @@ const fntMap: Record<string, string> = {
   big: 'base',
 };
 
-export { oidMap, btnMap, modeMap, launchMap, fntMap };
+const trackMap: Record<string, string> = {
+  menuLoop: 'menu',
+  DJRubRub: 'secret-level',
+  secretLoop: 'secret',
+  secretLoop02: 'secret2',
+  secretLoop03: 'secret3',
+  shop: 'shop',
+  shop3: 'shop2',
+  xStep: 'xstep'
+};
+
+export { oidMap, btnMap, modeMap, launchMap, fntMap, trackMap };

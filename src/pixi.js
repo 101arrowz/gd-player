@@ -9,7 +9,9 @@ import { TilingSpriteRenderer } from '@pixi/sprite-tiling';
 Renderer.registerPlugin('tilingSprite', TilingSpriteRenderer);
 export * from '@pixi/spritesheet';
 export * from '@pixi/text-bitmap';
-
+export * from '@pixi/interaction';
+import { InteractionManager } from '@pixi/interaction';
+Renderer.registerPlugin('interaction', InteractionManager);
 
 // core - do not touch
 if (!Object.assign) {

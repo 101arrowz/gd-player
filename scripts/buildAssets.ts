@@ -6,7 +6,7 @@ import {
   readdirSync,
   mkdirSync,
 } from 'fs';
-import { oidMap, btnMap, modeMap, launchMap, fntMap } from './maps';
+import { oidMap, btnMap, modeMap, launchMap, fntMap, trackMap } from './maps';
 import { join, extname } from 'path';
 import { parse } from 'plist';
 
@@ -96,6 +96,7 @@ const build = (): void => {
     'backgrounds',
     'groundtiles',
     'sliders',
+    'tracks'
   ]) {
     const td = to(dir);
     if (!existsSync(td)) mkdirSync(td);
@@ -255,6 +256,11 @@ const build = (): void => {
             copyFileSync(from(f), to('sliders', s.length - 6 + '.groove.png'));
         }
       }
+    } else if (en == '.mp3') {
+      const bn = f.slice(0, -4);
+      const newName = trackMap[bn]
+        || (bn[0].toLowerCase() + bn.slice(1).replace(/[A-Z0-9]/g, (char) => '-' + char.toLowerCase()));
+      copyFileSync(from(f), to('tracks', newName + '.mp3'));
     }
   }
 };

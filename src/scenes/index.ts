@@ -14,7 +14,7 @@ export type SceneName = 'loading' | 'home';
 let scene: SceneName = 'loading';
 
 type Intersect<U> = 
-  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
+  (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
 
 
 let sprites: BaseSpriteMap;

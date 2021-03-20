@@ -229,13 +229,11 @@ export default new Scene({
         loadProm = loadProm.then(async () => {
           resolvedBytes += bytes;
           resolvedBytesTotal += bytesTotal;
-          await multiLoad(preloads[timesRun], onProgress);
+          await multiLoad(preloads[timesRun], onProgress)
           ++timesRun;
           resolved = true;
         });
-      } else if (Date.now() - ts > 1000) {
-        return 'home';
-      }
+      } else return 'home';
     }
   },
 });

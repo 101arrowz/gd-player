@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "license": "MIT",
   "devDependencies": {
+    "@parcel/packager-raw-url": "2.0.0-nightly.2252",
+    "@parcel/transformer-inline-string": "2.0.0-nightly.630",
     "@types/node": "^14.14.2",
     "@types/plist": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
@@ -10,18 +12,19 @@
     "eslint": "^7.12.0",
     "eslint-config-prettier": "^6.14.0",
     "eslint-plugin-prettier": "^3.1.4",
-    "parcel": "^2.0.0-nightly.433",
+    "parcel": "^2.0.0-nightly.628",
     "parcel-config-precache-manifest": "^0.0.3",
-    "parcel-config-pwa-manifest": "^0.0.8",
+    "parcel-config-pwa-manifest": "^0.0.9",
     "plist": "^3.0.1",
     "prettier": "^2.1.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
+    "serve": "^11.3.2",
     "ts-node": "^9.0.0",
-    "typescript": "^4.0.3"
+    "typescript": "^4.2.3"
   },
   "scripts": {
-    "start": "yarn build:assets && parcel serve src/index.html",
+    "start": "yarn build:assets && parcel watch src/index.html & serve dist/",
     "lint": "eslint --fix \"src/**/*.ts\" \"scripts/*.ts\"",
     "sc": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\": \\\"CommonJS\\\"}\" node -r ts-node/register scripts/$SC.ts",
     "build:assets": "SC=copyAssets yarn sc",
