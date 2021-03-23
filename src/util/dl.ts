@@ -1,3 +1,5 @@
+import { corsURL } from './const';
+
 export type ProgressHandler = (bytes: number, bytesTotal: number) => void;
 export type DownloadQuery =
   | string
@@ -45,7 +47,14 @@ export default <T extends DownloadQuery[]>(
         };
         xhr.onload = () => res(xhr.response);
         xhr.onerror = () => rej(xhr.statusText);
-        xhr.open('GET', url, true);
+        // "Referer" header not sent due to <meta> in HTML
+        xhr.open(
+          'GET',
+          !url.startsWith('http') || url.slice(0, url.indexOf('/',8)) == location.origin
+            ? url
+            : corsURL + url,
+          true
+        );
         xhr.send();
         xhr.responseType = type;
       })

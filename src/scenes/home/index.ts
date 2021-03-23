@@ -6,6 +6,7 @@ import { Sprite, TilingSprite } from 'pixi.js';
 const offsetB = Math.PI * 2 / 3;
 const offsetG = 2 * offsetB;
 let timeElapsed: number;
+let clickedPlay = false;
 
 const rgbCycleC = (time: number, offset: number) => {
   const rat = Math.sin(time + offset);
@@ -16,12 +17,13 @@ const rgbCycle = (time: number) => (rgbCycleC(time, 0) << 16) | (rgbCycleC(time,
 
 export default new Scene({
   init: () => {
+    clickedPlay = false;
     timeElapsed = -2000;
     const bg = new Background(1, 0.1);
     const groundTile = new TilingSprite(groundTiles[1][0]);
     const logo = new Sprite(textures.logoGD);
     logo.anchor.set(0.5);
-    const play = new Button(textures.btnPlay, () => console.log('pressed!'));
+    const play = new Button(textures.btnPlay, () => clickedPlay = true);
     return {
       bg,
       logo,
@@ -49,5 +51,6 @@ export default new Scene({
     play.x = window.innerWidth / 2;
     play.y = window.innerHeight / 2;
     play.update(delta);
+    if (clickedPlay) return 'level'
   },
 });

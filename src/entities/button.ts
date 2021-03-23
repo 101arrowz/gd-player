@@ -27,10 +27,10 @@ export default class Button extends Sprite {
   private animTime: number;
   private animType: AnimationType;
   private scaleMultiplier: number;
-  private origScale?: ObservablePoint;
-  private origX?: number;
-  private origY?: number;
-  constructor(texture: Texture, onClick: () => unknown) {
+  private origScale: ObservablePoint;
+  private origX: number;
+  private origY: number;
+  constructor(texture: Texture, public onClick?: () => unknown) {
     super(texture);
     this.interactive = true;
     this.animTime = -1;
@@ -38,11 +38,13 @@ export default class Button extends Sprite {
     this.anchor.set(0.5);
     this.scaleMultiplier = 1;
     let selfUpdate = false;
+    this.origScale = this.transform.scale;
+    this.origX = this.origScale.x, this.origY = this.origScale.y;
     const onDown = () => {
+      this.origScale = this.transform.scale;
       this.animTime = 0;
       this.scaleMultiplier = 0.999;
       this.animType = AnimationType.DOWN;
-      this.origScale = this.transform.scale;
       const newScale = new ObservablePoint(() => {
         if (selfUpdate)  this.transform['onChange']();
         else {
@@ -59,7 +61,7 @@ export default class Button extends Sprite {
       if (this.animType == AnimationType.DOWN) {
         this.animType = AnimationType.UP;
         if (this.animTime == -1) this.animTime = 300;
-        onClick();
+        if (this.onClick) this.onClick();
       }
     }
     const onOut = () => {
@@ -90,7 +92,7 @@ export default class Button extends Sprite {
         if (mdt <= 0) {
           this.animTime = -1;
           this.transform.scale = this.origScale!;
-          this.origScale!.set(this.origX, this.origY);
+          this.origScale.set(this.origX, this.origY);
           this.transform['onChange']();
         }
       } else if (this.animType == AnimationType.OUT) {
@@ -100,7 +102,7 @@ export default class Button extends Sprite {
         if (mdt <= 0) {
           this.animTime = -1;
           this.transform.scale = this.origScale!;
-          this.origScale!.set(this.origX, this.origY);
+          this.origScale.set(this.origX, this.origY);
           this.transform['onChange']();
         }
       }

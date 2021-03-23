@@ -259,16 +259,31 @@ export const loadSliders = (
   });
 };
 
+export const raw = {} as Record<string, ArrayBuffer>;
+
+export const loadRaw = (
+  urls: string[],
+  onProgress?: ProgressHandler
+): Promise<void> => {
+  urls = urls.filter((t) => !raw[t]);
+  return Promise.all(dl(urls, onProgress)).then((ts) => {
+    for (let i = 0; i < ts.length; ++i) {
+      raw[urls[i]] = ts[i];
+    }
+  });
+};
+
 export type MultiLoad = {
   sheets?: Sheet[];
   bgs?: BG[];
   fonts?: Font[];
   groundTiles?: GroundTile[];
   sliders?: Slider[];
+  raw?: string[];
 };
 
 export const multiLoad = (
-  { sheets, bgs, fonts, groundTiles, sliders }: MultiLoad,
+  { sheets, bgs, fonts, groundTiles, sliders, raw }: MultiLoad,
   onProgress?: ProgressHandler
 ): Promise<void> => {
   const createProgress = onProgress
@@ -280,5 +295,6 @@ export const multiLoad = (
   if (fonts) proms.push(loadFonts(fonts, createProgress()));
   if (groundTiles) proms.push(loadGroundTiles(groundTiles, createProgress()));
   if (sliders) proms.push(loadSliders(sliders, createProgress()));
+  if (raw) proms.push(loadRaw(raw, createProgress()));
   return Promise.all(proms).then();
 };

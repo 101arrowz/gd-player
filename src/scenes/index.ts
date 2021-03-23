@@ -2,14 +2,16 @@ import { Container, Sprite, Texture } from 'pixi.js';
 import { BaseSpriteMap } from './scene';
 import loading from './loading';
 import home from './home';
+import level from './level';
 
 const scenes = {
   loading,
-  home
+  home,
+  level
 };
 
 // Limitation of TS does not allow us to do this normally
-export type SceneName = 'loading' | 'home';
+export type SceneName = 'loading' | 'home' | 'level';
 
 let scene: SceneName = 'loading';
 
@@ -18,8 +20,6 @@ type Intersect<U> =
 
 
 let sprites: BaseSpriteMap;
-const blackSprite = new Sprite(Texture.fromBuffer(new Uint8Array([0, 0, 0, 255]), 1, 1));
-blackSprite.alpha = 0;
 Promise.resolve(scenes[scene].init()).then((sp) => {
   sprites = sp;
 });
@@ -31,9 +31,8 @@ let onRender: ((stage: Container, delta: number) => void) | null = (stage) => {
       sprites as Intersect<Parameters<typeof scenes[typeof scene]['render']>[0]>,
       0
     );
-    for (const i in sprites) {
-      stage.addChild(sprites[i as keyof typeof sprites]);
-    }
+    stage.addChild.apply(stage, Object.values(sprites));
+    stage.sortChildren();
     onRender = null;
   }
 };
@@ -50,6 +49,8 @@ export default (stage: Container, delta: number): void => {
   if (next) {
     scene = next;
     let tol = 200;
+    const blackSprite = new Sprite(Texture.fromBuffer(new Uint8Array([0, 0, 0, 255]), 1, 1));
+    blackSprite.alpha = 0;
     stage.addChild(blackSprite);
     blackSprite.width = window.innerWidth;
     blackSprite.height = window.innerHeight;
@@ -65,9 +66,8 @@ export default (stage: Container, delta: number): void => {
         Promise.resolve(scenes[scene].init()).then((sp) => {
           let tl = 200;
           scenes[scene].render(sp as Intersect<Parameters<typeof scenes[typeof scene]['render']>[0]>, 0);
-          for (const i in sp) {
-            stage.addChild(sp[i as keyof typeof sp]);
-          }
+          stage.addChild.apply(stage, Object.values(sp));
+          stage.sortChildren();
           stage.addChild(blackSprite);
           onRender = (_, d) => {
             d = Math.min(d, tl);

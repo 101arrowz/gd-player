@@ -258,8 +258,7 @@ const build = (): void => {
       }
     } else if (en == '.mp3') {
       const bn = f.slice(0, -4);
-      const newName = trackMap[bn]
-        || (bn[0].toLowerCase() + bn.slice(1).replace(/[A-Z0-9]/g, (char) => '-' + char.toLowerCase()));
+      const newName = trackMap[bn];
       copyFileSync(from(f), to('tracks', newName + '.mp3'));
     }
   }

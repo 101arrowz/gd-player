@@ -4,6 +4,7 @@ import { BG, backgrounds, loadBGs } from '../util/assets';
 export default class Background extends TilingSprite {
   constructor(bg: BG, public shiftSpeed = 0) {
     super(backgrounds[bg]);
+    this.zIndex = -Infinity;
   }
   async create(bg: BG, shiftSpeed?: number) {
     if (!backgrounds[bg]) await loadBGs([bg]);

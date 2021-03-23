@@ -1,7 +1,7 @@
 import { BitmapText, Container, Sprite, TilingSprite } from 'pixi.js';
+import { Background } from '../../entities';
 import {
   textures,
-  backgrounds,
   sliders,
   multiLoad,
   MultiLoad,
@@ -140,8 +140,8 @@ export default new Scene({
       fonts: ['gold'],
       sliders: [0],
     });
-    const bg = new TilingSprite(
-      backgrounds[1]
+    const bg = new Background(
+      1
     );
     const logo = new Sprite(textures.logoGD);
     const robLogo = new Sprite(textures.logoRobTop);
@@ -179,17 +179,13 @@ export default new Scene({
     };
   },
   render({ bg, logo, robLogo, slider, splash }) {
-    bg.scale.set(window.innerHeight / 1100);
+    bg.update(0);
     logo.scale.set(
       Math.min(window.innerWidth / 2200, window.innerHeight / 1100)
     );
     robLogo.scale.set(
       Math.min(window.innerWidth / 2400, window.innerHeight / 1200)
     );
-    bg.x = -40 * bg.scale.x;
-    bg.y = -460 * bg.scale.y;
-    bg.width = window.innerWidth / bg.scale.x + 40;
-    bg.height = window.innerHeight / bg.scale.y + 460;
     logo.x = window.innerWidth / 2;
     logo.y = Math.min(
       window.innerHeight / 3 + window.innerWidth / 10,

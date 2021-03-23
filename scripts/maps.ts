@@ -1117,15 +1117,37 @@ const fntMap: Record<string, string> = {
   big: 'base',
 };
 
-const trackMap: Record<string, string> = {
+const trackMap: Record<string, string | number> = {
+  StayInsideMe: 0,
+  StereoMadness: 1,
+  BackOnTrack: 2,
+  Polargeist: 3,
+  DryOut: 4,
+  BaseAfterBase: 5,
+  CantLetGo: 6,
+  Jumper: 7,
+  TimeMachine: 8,
+  Cycles: 9,
+  xStep: 10,
+  Clutterfunk: 11,
+  TheoryOfEverything: 12,
+  Electroman: 13,
+  Clubstep: 14,
+  Electrodynamix: 15,
+  HexagonForce: 16,
+  BlastProcessing: 17,
+  TheoryOfEverything2: 18,
+  GeometricalDominator: 19,
+  Deadlocked: 20,
+  Fingerdash: 21,
   menuLoop: 'menu',
-  DJRubRub: 'secret-level',
-  secretLoop: 'secret',
+  DJRubRub: 'secretlevel',
+  secretShop: 'secretshop',
+  secretLoop: 'secret1',
   secretLoop02: 'secret2',
   secretLoop03: 'secret3',
-  shop: 'shop',
-  shop3: 'shop2',
-  xStep: 'xstep'
+  shop: 'shop1',
+  shop3: 'shop2'
 };
 
 export { oidMap, btnMap, modeMap, launchMap, fntMap, trackMap };
