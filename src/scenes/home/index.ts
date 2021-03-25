@@ -2,6 +2,7 @@ import Scene from '../scene';
 import { backgrounds, groundTiles, textures } from '../../util';
 import { Background, Button } from '../../entities';
 import { Sprite, TilingSprite } from 'pixi.js';
+import GroundTile from '../../entities/groundTile';
 
 const offsetB = Math.PI * 2 / 3;
 const offsetG = 2 * offsetB;
@@ -20,7 +21,7 @@ export default new Scene({
     clickedPlay = false;
     timeElapsed = -2000;
     const bg = new Background(1, 0.1);
-    const groundTile = new TilingSprite(groundTiles[1][0]);
+    const groundTile = new GroundTile(1, 1);
     const logo = new Sprite(textures.logoGD);
     logo.anchor.set(0.5);
     const play = new Button(textures.btnPlay, () => clickedPlay = true);
@@ -32,14 +33,10 @@ export default new Scene({
     };
   },
   render({ bg, groundTile, logo, play }, delta) {
-    bg.update(delta);
     timeElapsed += delta;
     groundTile.tint = bg.tint = rgbCycle(timeElapsed / 8000);
-    groundTile.scale.set(window.innerHeight / 1100);
-    groundTile.y = window.innerHeight - 300 * groundTile.scale.y;
-    groundTile.width = window.innerWidth / groundTile.scale.x + 40;
-    groundTile.height = groundTile.texture.height;
-    groundTile.tilePosition.x -= delta * 1.25;
+    bg.update(delta);
+    groundTile.update(delta);
     logo.scale.set(
       Math.min(window.innerWidth / 2400, window.innerHeight / 1400)
     );

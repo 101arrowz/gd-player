@@ -23,8 +23,8 @@ bs.overflow = hts.overflow = 'hidden';
 document.body.appendChild(renderer.view);
 
 let lastTime = performance.now();
-
 const render = (newTime: number) => {
+  console.log(newTime - lastTime);
   addScene(stage, newTime - lastTime);
   lastTime = newTime;
   if (renderer.width != window.innerWidth || renderer.height != window.innerHeight) {

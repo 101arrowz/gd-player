@@ -17,6 +17,6 @@ export default class Background extends TilingSprite {
     this.y = -460 * this.scale.y;
     this.width = window.innerWidth / this.scale.x + 40;
     this.height = window.innerHeight / this.scale.y + 460;
-    if (this.shiftSpeed) this.tilePosition.x -= this.shiftSpeed * delta;
+    if (this.shiftSpeed) this.tilePosition.x -= this.shiftSpeed * delta / this.scale.x;
   }
 }

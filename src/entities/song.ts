@@ -1,6 +1,7 @@
 import { Song as GDSong } from 'gd.js';
 import { raw, loadRaw } from '../util';
 
+const hasAudioContext = typeof AudioContext != 'undefined';
 
 export type DefaultTrack = 
   | 'secretlevel'
@@ -27,16 +28,46 @@ export default class Song {
     this.timeBuffer = new Uint8Array(this.processor.fftSize = 2048);
     this.freqBuffer = new Uint8Array(this.processor.frequencyBinCount);
   }
-  static async create(src: DefaultTrack | GDSong, play = true) {
+  static async create(src: DefaultTrack | GDSong): Promise<Song> {
     let url: string
     if (typeof src != 'string') url = src.isCustom ? src.url : `/tracks/${src.id}.mp3`;
     else url = `/tracks/${src == 'practice' ? 0 : src}.mp3`;
+    if (!hasAudioContext) {
+      const aud = new Audio(url);
+      await new Promise((resolve, reject) => {
+        aud.addEventListener('canplaythrough', resolve);
+        aud.addEventListener('error', reject);
+      });
+      return {
+        currentAmplitude: 0,
+        get playing() {
+          return !aud.paused;
+        },
+        play(time?: number) {
+          if (time) aud.currentTime = time;
+          aud.play();
+        },
+        pause() {
+          if (aud.paused) throw new Error('not started');
+          aud.pause();
+        },
+        stop() {
+          if (aud.paused) throw new Error('not started');
+          aud.pause();
+          aud.currentTime = 0;
+        }
+      } as Song;
+    }
     if (!raw[url]) await loadRaw([url]);
-    const ctx = play ? new AudioContext() : new BaseAudioContext();
+    const ctx = new AudioContext();
     const ab = await new Promise<AudioBuffer>((res, rej) => ctx.decodeAudioData(raw[url], res, rej));
     return new Song(ctx, ab);
   }
+  get playing() {
+    return !!this.src;
+  }
   play(time?: number) {
+    if (this.src) throw new Error('already started');
     const bs = this.ctx.createBufferSource();
     bs.buffer = this.srcBuffer;
     bs.connect(this.processor);

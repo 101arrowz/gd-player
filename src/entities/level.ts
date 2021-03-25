@@ -3,6 +3,7 @@ import { Level as GDLevel } from 'gd.js'
 import Background from './background';
 import Song from './song';
 import { textures, BG } from '../util';
+import GroundTile from './groundTile';
 
 type IntBool = 0 | 1;
 
@@ -80,7 +81,7 @@ enum TargetPositionCoords {
 
 }
 
-type ColorMap = {
+type Color = {
   1: number;
   2: number;
   3: number;
@@ -110,26 +111,26 @@ type RawGDMeta = {
   kA17?: number;
   kA18?: number;
   kA22?: IntBool;
-  kS38?: ColorMap[];
+  kS38?: Color[];
   kS39?: number;
   // BG, channel 1000
-  kS29?: ColorMap;
+  kS29?: Color;
   // ground, channel 1001
-  kS30?: ColorMap;
+  kS30?: Color;
   // line, channel 1002
-  kS31?: ColorMap;
+  kS31?: Color;
   // object, channel 1004
-  kS32?: ColorMap;
+  kS32?: Color;
   // channel 1
-  kS33?: ColorMap;
+  kS33?: Color;
   // channel 2
-  kS34?: ColorMap;
+  kS34?: Color;
   // channel 3
-  kS35?: ColorMap;
+  kS35?: Color;
   // channel 4
-  kS36?: ColorMap;
+  kS36?: Color;
   // 3D line, channel 1003
-  kS37?: 1003;
+  kS37?: Color;
   // RGB version
   kS1?: number;
   kS2?: number;
@@ -254,11 +255,43 @@ type RawGDObject = {
   108?: number;
 };
 
+const parseHSV = (data: string): HSV => {
+  const parts = data.split('a');
+  return {
+    h: +parts[0],
+    s: +parts[1],
+    v: +parts[2],
+    sAdd: +parts[3] as IntBool,
+    vAdd: +parts[4] as IntBool
+  };
+}
+
+const parseColor = (data: string) => {
+  const split = data.split('_');
+  const obj = {} as Color;
+  for (let i = 0; i < split.length; i += 2) {
+    const key = +split[i], val = split[i + 1];
+    if (key == 10) obj[key] = parseHSV(val);
+    else obj[key as keyof Color] = +val as never;
+  }
+  return obj;
+}
+
 const parseMeta = (data: string) => {
   const split = data.split(',');
   const obj = {} as RawGDMeta;
   for (let i = 0; i < split.length; i += 2) {
     const key = split[i], val = split[i + 1];
+    if (key.startsWith('kA')) {
+      if (key == 'kA14') obj[key] = val;
+      else obj[key as keyof RawGDMeta] = +val as never;
+    } else {
+      const id = +key.slice(2);
+      if (id == 38) {
+        obj[key as 'kS38'] = val.split('|').map(parseColor);
+      } else if (id > 28) obj[key as keyof RawGDMeta] = parseColor(val) as never;
+      else obj[key as keyof RawGDMeta] = +val as never;
+    }
   }
   return obj;
 }
@@ -269,16 +302,8 @@ const parseObject = (data: string) => {
   for (let i = 0; i < split.length; i += 2) {
     const key = +split[i], val = split[i + 1];
     if (key == 31) obj[key] = atob(val.replace(/_/g, '/').replace(/-/g, '+'));
-    else if (key == 43 || key == 44 || key == 49) {
-      const parts = val.split('a');
-      obj[key] = {
-        h: +parts[0],
-        s: +parts[1],
-        v: +parts[2],
-        sAdd: +parts[3] as IntBool,
-        vAdd: +parts[4] as IntBool
-      };
-    } else obj[key as keyof RawGDObject] = +val as never;
+    else if (key == 43 || key == 44 || key == 49) obj[key] = parseHSV(val);
+    else obj[key as keyof RawGDObject] = +val as never;
     // TODO: Make less "hacky"
   }
   return obj;
@@ -327,20 +352,20 @@ export default class Level extends Container {
   private objects: LevelObject[];
   private camX: number;
   private bg: Background;
+  private gt: GroundTile;
   private camY: number;
   private shiftSpeed: number;
   constructor(meta: RawGDMeta, objects: RawGDObject[], private song: Song) {
     super();
-    this.addChild(this.bg = new Background(meta.kA6 as BG));
+    this.addChild(this.bg = new Background(meta.kA6 as BG || 1, 0.1));
+    this.addChild(this.gt = new GroundTile(1, this.shiftSpeed = 0.5));
     this.addChild.apply(this, this.objects = objects.reduce<LevelObject[]>((acc, obj) => {
       const objSprite = createObject(obj);
       if (objSprite) acc.push(objSprite);
       return acc;
     }, []));
-    song.play();
-    this.camX = 0;
     this.camY = 0;
-    this.shiftSpeed = 5;
+    this.camX = 0;
   }
   static async create(level: GDLevel) {
     const [
@@ -348,20 +373,23 @@ export default class Level extends Container {
       song
     ] = await Promise.all([
       level.decodeData(),
-      Song.create(level.song, true)
+      Song.create(level.song)
     ]);
     const [head, ...rest] = raw.split(';')
     return new Level(parseMeta(head), rest.slice(0, -1).map(parseObject), song);
   }
   update(delta: number) {
+    if (!this.song.playing) this.song.play();
     for (const obj of this.objects) {
-      const x = obj.x = obj.srcX * 2 - this.camX;
-      const y = obj.y = window.innerHeight - (obj.srcY * 2 - this.camY);
+      const x = obj.x = (obj.srcX * 2 - this.camX);
+      const y = obj.y = window.innerHeight - (obj.srcY * 2 + this.camY);
       const edgeX = obj.texture.width / 2, edgeY = obj.texture.height / 2;
       obj.visible = x > -edgeX && x < window.innerWidth + edgeX && y > -edgeY && y < window.innerHeight + edgeY;
-      
     }
-    this.camX += this.shiftSpeed;
     this.bg.update(delta);
+    this.gt.shiftSpeed = this.shiftSpeed;
+    this.gt.update(delta);
+    this.camX += this.shiftSpeed * delta;
+    this.camY = window.innerHeight - this.gt.y;
   }
 }
