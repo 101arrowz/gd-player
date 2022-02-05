@@ -1,10 +1,9 @@
 import { Renderer, Container, utils } from 'pixi.js';
 import 'regenerator-runtime/runtime';
 import addScene from './scenes';
-import './scenes';
 if (process.env.NODE_ENV === 'production') {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.ts');
+    navigator.serviceWorker.register(new URL('workers/service.ts', import.meta.url), { type: 'module' });
   }
 } else utils.skipHello();
 

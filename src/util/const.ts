@@ -1,1 +1,1 @@
-export const corsURL = 'https://cors-101arrowz.herokuapp.com/';
+export const corsURL = 'http://cors-101arrowz.eastus2.cloudapp.azure.com/';

@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "license": "MIT",
   "devDependencies": {
-    "@parcel/packager-raw-url": "2.0.0-nightly.2252",
-    "@parcel/transformer-inline-string": "2.0.0-nightly.630",
+    "@parcel/packager-raw-url": "^2.2.1",
+    "@parcel/packager-xml": "^2.2.1",
+    "@parcel/transformer-inline-string": "^2.2.1",
+    "@parcel/transformer-typescript-tsc": "^2.2.1",
     "@types/node": "^14.14.2",
     "@types/plist": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
@@ -12,9 +14,8 @@
     "eslint": "^7.12.0",
     "eslint-config-prettier": "^6.14.0",
     "eslint-plugin-prettier": "^3.1.4",
-    "parcel": "^2.0.0-nightly.628",
-    "parcel-config-precache-manifest": "^0.0.3",
-    "parcel-config-pwa-manifest": "^0.0.9",
+    "parcel": "^2.2.1",
+    "parcel-config-pwa-manifest": "^0.1.1",
     "plist": "^3.0.1",
     "prettier": "^2.1.2",
     "react": "^17.0.1",
@@ -31,9 +32,10 @@
     "build": "yarn build:assets && parcel build src/index.html"
   },
   "dependencies": {
+    "@parcel/service-worker": "^2.2.1",
     "fflate": "^0.3.1",
-    "gd.js": "^0.2.11",
-    "pixi.js": "^5.3.3",
+    "gd.js": "^0.2.13",
+    "pixi.js": "^6.2.2",
     "preact": "^10.5.5"
   },
   "alias": {

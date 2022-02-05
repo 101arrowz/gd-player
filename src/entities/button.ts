@@ -34,19 +34,18 @@ export default class Button extends Sprite {
     super(texture);
     this.interactive = true;
     this.animTime = -1;
-    this.animType = AnimationType.DOWN;
+    this.animType = AnimationType.UP;
     this.anchor.set(0.5);
     this.scaleMultiplier = 1;
     let selfUpdate = false;
     this.origScale = this.transform.scale;
     this.origX = this.origScale.x, this.origY = this.origScale.y;
     const onDown = () => {
-      this.origScale = this.transform.scale;
       this.animTime = 0;
       this.scaleMultiplier = 0.999;
       this.animType = AnimationType.DOWN;
       const newScale = new ObservablePoint(() => {
-        if (selfUpdate)  this.transform['onChange']();
+        if (selfUpdate) this.transform['onChange']();
         else {
           this.origX = newScale.x, this.origY = newScale.y;
           selfUpdate = true;
@@ -59,24 +58,35 @@ export default class Button extends Sprite {
     };
     const onUp = () => {
       if (this.animType == AnimationType.DOWN) {
-        this.animType = AnimationType.UP;
         if (this.animTime == -1) this.animTime = 300;
         if (this.onClick) this.onClick();
       }
-    }
+      this.animType = AnimationType.UP;
+    };
     const onOut = () => {
       if (this.animType == AnimationType.DOWN) {
         this.animType = AnimationType.OUT;
         if (this.animTime == -1) this.animTime = 300;
       }
-    }
-    this.on('mousedown', onDown);
-    this.on('touchstart', onDown);
-    this.on('touchend', onUp)
-    this.on('mouseup', onUp);
-    this.on('touchcancel', onOut);
-    this.on('touchendoutside', onOut);
-    this.on('mouseout', onOut);
+    };
+    const onIn = () => {
+      if (this.animType == AnimationType.OUT) {
+        onDown();
+      }
+    };
+    this.on('pointerdown', onDown);
+    // this.on('touchstart', onDown);
+    // this.on('touchend', onUp)
+    this.on('pointerup', onUp);
+    this.on('pointerupoutside', onUp);
+    // this.on('touchendoutside', onOut);
+    this.on('pointermove', ev => {
+      if (ev.target != this) {
+        onOut();
+      } else {
+        onIn();
+      }
+    })
   }
   update(delta: number) {
     if (this.animTime != -1) {

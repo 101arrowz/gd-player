@@ -59,10 +59,6 @@ const rsd =
         'Geometry Dash',
         'Resources'
       ));
-if (!existsSync(rsd))
-  throw new Error(
-    "Couldn't find the Geometry Dash directory. Please set the GD_DIR environment variable to the path to the GD resources folder."
-  );
 
 const from = (p: string) => join(rsd, p);
 
@@ -89,6 +85,10 @@ const parseSSV = (v: string): SSV =>
   JSON.parse(v.replace(/{/g, '[').replace(/}/g, ']'));
 
 const build = (): void => {
+  if (!existsSync(rsd))
+    throw new Error(
+      "Couldn't find the Geometry Dash directory. Please set the GD_DIR environment variable to the path to the GD resources folder."
+    );
   for (const dir of [
     '.',
     'fonts',

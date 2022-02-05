@@ -155,7 +155,7 @@ export default new Scene({
         ];
     else store.loadMessage = 0;
     const splash = new BitmapText(text, { fontName: 'gold', fontSize: 8 });
-    splash.anchor = 0.5;
+    splash.anchor.set(0.5);
     bg.tint = 0x006fff;
     logo.anchor.set(0.5);
     robLogo.anchor.set(0.5);

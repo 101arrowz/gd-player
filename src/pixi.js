@@ -1,7 +1,4 @@
 export * from '@pixi/display';
-export * from '@pixi/particles';
-import { ParticleRenderer } from '@pixi/particles';
-Renderer.registerPlugin('particle', ParticleRenderer);
 export * from '@pixi/sprite';
 export * from '@pixi/sprite-animated';
 export * from '@pixi/sprite-tiling';

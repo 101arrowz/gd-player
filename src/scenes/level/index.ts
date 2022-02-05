@@ -5,7 +5,7 @@ import { Sprite, TilingSprite, Texture } from 'pixi.js';
 
 export default new Scene({
   init: async () => {
-    const level = await gd.levels.get(+(prompt('Level ID:') || 2577156), true);
+    const level = await gd.levels.get(/*prompt('Level ID:') || */2577156, true);
     const out = {
       level: await Level.create(level)
     };

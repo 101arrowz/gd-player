@@ -6,15 +6,31 @@ import { textures, BG } from '../util';
 
 type IntBool = 0 | 1;
 
-interface HSV {
+type RGB = {
+  r: number;
+  g: number;
+  b: number;
+};
+
+type HSV = {
   h: number;
   s: number;
   v: number;
+};
+
+type HSVMod = HSV & {
   sAdd: IntBool;
   vAdd: IntBool;
-}
+};
 
-const rgbToHSV = (r: number, g: number, b: number) => {
+const rgbToTint = ({ r, g, b }: RGB) => (r << 16) | (g << 8) | b;
+const tintToRGB = (tint: number) => ({
+  r: tint >> 16,
+  g: (tint >> 8) & 255,
+  b: tint & 255
+});
+
+const rgbToHSV = ({ r, g, b }: RGB) => {
   const v = Math.max(r, g, b), c = v - Math.min(r, g, b);
   const h = c && (
     (v == r)
@@ -23,14 +39,14 @@ const rgbToHSV = (r: number, g: number, b: number) => {
         ? 2 + (b - r) / c
         : 4 + (r - g) / c
   );
-  return [
-    60 * (h < 0 ? h + 6 : h),
-    v && c / v,
-    v / 255
-  ];
-}
+  return {
+    h: 60 * (h < 0 ? h + 6 : h),
+    s: v && c / v,
+    v: v / 255
+  };
+};
 
-const hsvToRGB = (h: number, s: number, v: number) => {
+const hsvToRGB = ({ h, s, v }: HSV) => {
   const hsec = h / 60;
   const hsecmod = hsec % 2 - 1;
   const c = s * v * 256, m = v * 256 - c, x = c * (1 - (hsecmod - (hsecmod > 1 as unknown as number)));
@@ -41,11 +57,22 @@ const hsvToRGB = (h: number, s: number, v: number) => {
   else if (hsec > 2) g += c, b += x;
   else if (hsec > 1) r += x, g += c;
   else r += c, g += x;
-  return (r << 16) | (g << 8) | b;
+  return { r, g, b };
 }
 
 enum Gamemode {
+  Cube = 0,
+  Ship = 1,
+  Ball = 2,
+  UFO = 3,
+  Wave = 4,
+  Robot = 5,
+  Spider = 6
+}
 
+enum PlayerColor {
+  Primary = 1,
+  Secondary = 2
 }
 
 enum Speed {
@@ -81,15 +108,15 @@ enum TargetPositionCoords {
 }
 
 type ColorMap = {
-  1: number;
-  2: number;
-  3: number;
-  4?: number;
+  1?: number;
+  2?: number;
+  3?: number;
+  4?: PlayerColor;
   5?: IntBool;
   6?: number;
   7?: number;
   9?: number;
-  10?: HSV;
+  10?: HSVMod;
   17?: IntBool;
 }
 
@@ -129,7 +156,7 @@ type RawGDMeta = {
   // channel 4
   kS36?: ColorMap;
   // 3D line, channel 1003
-  kS37?: 1003;
+  kS37?: ColorMap;
   // RGB version
   kS1?: number;
   kS2?: number;
@@ -150,7 +177,7 @@ type RawGDMeta = {
   kS17?: number;
   kS18?: number;
   kS19?: number;
-  kS20?: number
+  kS20?: number;
 };
 
 type RawGDObject = {
@@ -188,15 +215,15 @@ type RawGDObject = {
   41?: IntBool;
   42?: IntBool;
   // nonnumeric
-  43?: HSV;
+  43?: HSVMod;
   // nonnumeric
-  44?: HSV;
+  44?: HSVMod;
   45?: number;
   46?: number;
   47?: number;
   48?: PulseMode;
   // nonnumeric
-  49?: HSV;
+  49?: HSVMod;
   50: number;
   51?: number;
   52?: PulseTargetType;
@@ -254,11 +281,47 @@ type RawGDObject = {
   108?: number;
 };
 
+const parseHSVMod = (data: string) => {
+  const parts = data.split('a');
+  return {
+    h: +parts[0],
+    s: +parts[1],
+    v: +parts[2],
+    sAdd: +parts[3] as IntBool,
+    vAdd: +parts[4] as IntBool
+  };
+}
+
+const parseColor = (data: string) => {
+  const split = data.split('_');
+  const obj = {} as ColorMap;
+  for (let i = 0; i < split.length; i += 2) {
+    const key = +split[i], val = split[i + 1];
+    if (key == 10) {
+      obj[key] = parseHSVMod(val);
+    } else {
+      obj[key as keyof ColorMap] = +val as never;
+    }
+  }
+  return obj;
+}
+
 const parseMeta = (data: string) => {
   const split = data.split(',');
   const obj = {} as RawGDMeta;
   for (let i = 0; i < split.length; i += 2) {
     const key = split[i], val = split[i + 1];
+    if (key == 'kA14') {
+      obj[key] = val;
+    } else if (key.startsWith('kS') && +key.slice(2) >= 29) {
+      if (key == 'kS38') {
+        obj[key] = val.split('|').map(parseColor);
+      } else {
+        obj[key as 'kS29'] = parseColor(val);
+      }
+    } else {
+      obj[key as keyof RawGDMeta] = +val as never;
+    }
   }
   return obj;
 }
@@ -269,41 +332,37 @@ const parseObject = (data: string) => {
   for (let i = 0; i < split.length; i += 2) {
     const key = +split[i], val = split[i + 1];
     if (key == 31) obj[key] = atob(val.replace(/_/g, '/').replace(/-/g, '+'));
-    else if (key == 43 || key == 44 || key == 49) {
-      const parts = val.split('a');
-      obj[key] = {
-        h: +parts[0],
-        s: +parts[1],
-        v: +parts[2],
-        sAdd: +parts[3] as IntBool,
-        vAdd: +parts[4] as IntBool
-      };
-    } else obj[key as keyof RawGDObject] = +val as never;
+    else if (key == 43 || key == 44 || key == 49) obj[key] = parseHSVMod(val);
+    else obj[key as keyof RawGDObject] = +val as never;
     // TODO: Make less "hacky"
   }
   return obj;
 };
 
 class LevelObject extends Sprite {
-  srcX: number;
-  srcY: number;
   constructor(id: number, obj: RawGDObject) {
     super(textures[id]);
-    this.srcX = obj[2];
-    this.srcY = obj[3];
-    this.scale.set(obj[4] ? -0.5 : 0.5, obj[5] ? -0.5 : 0.5);
+    this.x = obj[2];
+    this.y = obj[3];
+    this.scale.set(obj[4] ? -0.25 : 0.25, obj[5] ? 0.25 : -0.25);
     this.anchor.set(0.5);
-    if (obj[6]) this.rotation = obj[6] * Math.PI / 180;
+    if (obj[6]) this.angle = -obj[6];
     if (obj[15]) {
-
+      // todo
     } else if (obj[16]) {
-      
+      // todo
     } else if (obj[21]) {
       if (obj[22]) {
-        
+        // todo
       }
+      // todo
     }
     this.zIndex = obj[24]!;
+  }
+
+  update(level: Level, delta: number) {
+    const maxEdge = Math.hypot(this.width, this.height) / 2;
+    this.visible = this.x + maxEdge > level.camX && this.x - maxEdge < level.boundX && this.y + maxEdge > level.camY && this.y - maxEdge < level.boundY;
   }
 
   static matchesID(id: number) {
@@ -312,7 +371,65 @@ class LevelObject extends Sprite {
   }
 }
 
-const objectTypes: Array<typeof LevelObject> = [LevelObject];
+const linearEase = (ratio: number) => ratio;
+const interpolate = (a: number, b: number, ratio: number) => a * (1 - ratio) + b * ratio;
+
+abstract class Trigger extends LevelObject {
+  private triggered: number;
+  private duration: number;
+  private ease: (ratio: number) => number;
+  constructor(id: number, obj: RawGDObject) {
+    super(id, obj);
+    this.visible = false;
+    this.duration = obj[10]! * 1000;
+    // TODO: easing
+    this.ease = linearEase;
+    this.triggered = 0;
+  }
+  update(level: Level, delta: number) {
+    if (this.triggered != this.duration && level.camX > this.x) {
+      this.triggered = Math.min(this.triggered + delta, this.duration);
+      this.trigger(level, this.ease(this.triggered / this.duration));
+    }
+  }
+  abstract trigger(level: Level, ratio: number): void;
+}
+
+abstract class ColorTrigger extends Trigger {
+  private color: RGB;
+  private initColor?: RGB;
+  constructor(id: number, obj: RawGDObject) {
+    super(id, obj);
+    this.color = {
+      r: obj[7]!,
+      g: obj[8]!,
+      b: obj[9]!
+    };
+  }
+  trigger(level: Level, ratio: number) {
+    if (this.initColor === undefined) {
+      this.initColor = tintToRGB(level.bg.tint);
+    }
+    this.updateColor(level, {
+      r: interpolate(this.initColor.r, this.color.r, ratio),
+      g: interpolate(this.initColor.g, this.color.g, ratio),
+      b: interpolate(this.initColor.b, this.color.b, ratio)
+    });
+  }
+  abstract updateColor(level: Level, color: RGB): void;
+}
+
+class BGTrigger extends ColorTrigger {
+  updateColor(level: Level, color: RGB) {
+    level.bg.tint = rgbToTint(color);
+  }
+  static matchesID(id: number) {
+    return id == 29;
+  }
+}
+
+
+const objectTypes: Array<typeof LevelObject> = [BGTrigger, LevelObject];
 
 const createObject = (obj: RawGDObject) => {
   const id = obj[1];
@@ -324,23 +441,29 @@ const createObject = (obj: RawGDObject) => {
 }
 
 export default class Level extends Container {
-  private objects: LevelObject[];
-  private camX: number;
-  private bg: Background;
-  private camY: number;
-  private shiftSpeed: number;
-  constructor(meta: RawGDMeta, objects: RawGDObject[], private song: Song) {
+  objects: LevelObject[];
+  objectLayer: Container;
+  camX: number;
+  camY: number;
+  boundX: number;
+  boundY: number;
+  bg: Background;
+  shiftSpeed: number;
+  constructor(meta: RawGDMeta, objects: RawGDObject[], song: Song) {
     super();
-    this.addChild(this.bg = new Background(meta.kA6 as BG));
-    this.addChild.apply(this, this.objects = objects.reduce<LevelObject[]>((acc, obj) => {
+    this.addChild(this.bg = new Background(meta.kA6 + 1 as BG, 0.1));
+    this.objects = objects.reduce<LevelObject[]>((acc, obj) => {
       const objSprite = createObject(obj);
       if (objSprite) acc.push(objSprite);
       return acc;
-    }, []));
+    }, []);
+    (this.objectLayer = new Container()).addChild(...this.objects);
+    this.addChild(this.objectLayer);
     song.play();
-    this.camX = 0;
-    this.camY = 0;
-    this.shiftSpeed = 5;
+    this.boundX = this.camX = 0;
+    this.boundY = this.camY = 0;
+    this.shiftSpeed = 0.3115801;
+    this.bg.tint = (meta.kS1! << 16) | (meta.kS2! << 8) | (meta.kS3!);
   }
   static async create(level: GDLevel) {
     const [
@@ -354,14 +477,18 @@ export default class Level extends Container {
     return new Level(parseMeta(head), rest.slice(0, -1).map(parseObject), song);
   }
   update(delta: number) {
-    for (const obj of this.objects) {
-      const x = obj.x = obj.srcX * 2 - this.camX;
-      const y = obj.y = window.innerHeight - (obj.srcY * 2 - this.camY);
-      const edgeX = obj.texture.width / 2, edgeY = obj.texture.height / 2;
-      obj.visible = x > -edgeX && x < window.innerWidth + edgeX && y > -edgeY && y < window.innerHeight + edgeY;
-      
-    }
-    this.camX += this.shiftSpeed;
+    this.camX += this.shiftSpeed * delta;
+    const levelScale = 1.5;
+    this.objectLayer.scale.set(levelScale, -levelScale);
+    this.objectLayer.pivot.x = this.camX;
+    this.objectLayer.pivot.y = this.camY;
+    this.objectLayer.y = window.innerHeight;
     this.bg.update(delta);
+    this.boundX = this.camX + window.innerWidth / levelScale;
+    this.boundY = this.camY + window.innerHeight / levelScale;
+
+    for (const obj of this.objects) {
+      obj.update(this, delta);
+    }
   }
 }
