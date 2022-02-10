@@ -229,7 +229,7 @@ export default new Scene({
           ++timesRun;
           resolved = true;
         });
-      } else return 'home';
+      } else return 'level'//'home';
     }
   },
 });

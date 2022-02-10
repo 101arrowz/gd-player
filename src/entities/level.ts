@@ -1,6 +1,7 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 import { Level as GDLevel } from 'gd.js'
 import Background from './background';
+import Ground from './ground';
 import Song from './song';
 import { textures, BG } from '../util';
 
@@ -340,7 +341,7 @@ const parseObject = (data: string) => {
 };
 
 class LevelObject extends Sprite {
-  constructor(id: number, obj: RawGDObject) {
+  constructor(id: number, obj: RawGDObject, protected level: Level) {
     super(textures[id]);
     this.x = obj[2];
     this.y = obj[3];
@@ -360,9 +361,9 @@ class LevelObject extends Sprite {
     this.zIndex = obj[24]!;
   }
 
-  update(level: Level, delta: number) {
+  update(delta: number) {
     const maxEdge = Math.hypot(this.width, this.height) / 2;
-    this.visible = this.x + maxEdge > level.camX && this.x - maxEdge < level.boundX && this.y + maxEdge > level.camY && this.y - maxEdge < level.boundY;
+    this.visible = this.x + maxEdge > this.level.camX && this.x - maxEdge < this.level.boundX && this.y + maxEdge > this.level.camY && this.y - maxEdge < this.level.boundY;
   }
 
   static matchesID(id: number) {
@@ -378,64 +379,80 @@ abstract class Trigger extends LevelObject {
   private triggered: number;
   private duration: number;
   private ease: (ratio: number) => number;
-  constructor(id: number, obj: RawGDObject) {
-    super(id, obj);
+  constructor(id: number, obj: RawGDObject, level: Level) {
+    super(id, obj, level);
     this.visible = false;
     this.duration = obj[10]! * 1000;
     // TODO: easing
     this.ease = linearEase;
     this.triggered = 0;
   }
-  update(level: Level, delta: number) {
-    if (this.triggered != this.duration && level.camX > this.x) {
+  update(delta: number) {
+    if (this.triggered != this.duration && this.level.camX > this.x) {
       this.triggered = Math.min(this.triggered + delta, this.duration);
-      this.trigger(level, this.ease(this.triggered / this.duration));
+      this.trigger(this.ease(this.triggered / this.duration));
     }
   }
-  abstract trigger(level: Level, ratio: number): void;
+  protected abstract trigger(ratio: number): void;
 }
 
 abstract class ColorTrigger extends Trigger {
-  private color: RGB;
+  private targetColor: RGB;
   private initColor?: RGB;
-  constructor(id: number, obj: RawGDObject) {
-    super(id, obj);
-    this.color = {
+  constructor(id: number, obj: RawGDObject, level: Level) {
+    super(id, obj, level);
+    this.targetColor = {
       r: obj[7]!,
       g: obj[8]!,
       b: obj[9]!
     };
   }
-  trigger(level: Level, ratio: number) {
+  protected trigger(ratio: number) {
     if (this.initColor === undefined) {
-      this.initColor = tintToRGB(level.bg.tint);
+      this.initColor = this.color;
     }
-    this.updateColor(level, {
-      r: interpolate(this.initColor.r, this.color.r, ratio),
-      g: interpolate(this.initColor.g, this.color.g, ratio),
-      b: interpolate(this.initColor.b, this.color.b, ratio)
-    });
+    this.color = {
+      r: interpolate(this.initColor.r, this.targetColor.r, ratio),
+      g: interpolate(this.initColor.g, this.targetColor.g, ratio),
+      b: interpolate(this.initColor.b, this.targetColor.b, ratio)
+    };
   }
-  abstract updateColor(level: Level, color: RGB): void;
+  protected abstract get color(): RGB;
+  protected abstract set color(color: RGB);
 }
 
 class BGTrigger extends ColorTrigger {
-  updateColor(level: Level, color: RGB) {
-    level.bg.tint = rgbToTint(color);
+  protected get color() {
+    return tintToRGB(this.level.bg.tint);
+  }
+  protected set color(color: RGB) {
+    this.level.bg.tint = rgbToTint(color);
   }
   static matchesID(id: number) {
     return id == 29;
   }
 }
 
+class GroundTrigger extends ColorTrigger {
+  protected get color() {
+    return tintToRGB(this.level.ground.tint);
+  }
+  protected set color(color: RGB) {
+    this.level.ground.tint = rgbToTint(color);
+  }
+  static matchesID(id: number) {
+    return id == 30;
+  }
+}
 
-const objectTypes: Array<typeof LevelObject> = [BGTrigger, LevelObject];
 
-const createObject = (obj: RawGDObject) => {
+const objectTypes: Array<typeof LevelObject> = [GroundTrigger, BGTrigger, LevelObject];
+
+const createObject = (level: Level, obj: RawGDObject) => {
   const id = obj[1];
   for (const ObjectType of objectTypes) {
     if (ObjectType.matchesID(id)) {
-      return new ObjectType(id, obj);
+      return new ObjectType(id, obj, level);
     }
   }
 }
@@ -448,22 +465,35 @@ export default class Level extends Container {
   boundX: number;
   boundY: number;
   bg: Background;
+  ground: Ground;
   shiftSpeed: number;
   constructor(meta: RawGDMeta, objects: RawGDObject[], song: Song) {
     super();
+    this.shiftSpeed = 0.3115801;
     this.addChild(this.bg = new Background(meta.kA6 + 1 as BG, 0.1));
     this.objects = objects.reduce<LevelObject[]>((acc, obj) => {
-      const objSprite = createObject(obj);
+      const objSprite = createObject(this, obj);
       if (objSprite) acc.push(objSprite);
       return acc;
     }, []);
-    (this.objectLayer = new Container()).addChild(...this.objects);
+    (this.objectLayer = new Container()).addChild(
+      ...this.objects,
+      this.ground = new Ground(1, this.shiftSpeed)
+    );
     this.addChild(this.objectLayer);
     song.play();
     this.boundX = this.camX = 0;
-    this.boundY = this.camY = 0;
-    this.shiftSpeed = 0.3115801;
-    this.bg.tint = (meta.kS1! << 16) | (meta.kS2! << 8) | (meta.kS3!);
+    this.boundY = this.camY = -100;
+    this.bg.tint =  rgbToTint({
+      r: meta.kS1!,
+      g: meta.kS2!,
+      b: meta.kS3!
+    });
+    this.ground.tint = rgbToTint({
+      r: meta.kS4!,
+      g: meta.kS5!,
+      b: meta.kS6!
+    });
   }
   static async create(level: GDLevel) {
     const [
@@ -477,18 +507,18 @@ export default class Level extends Container {
     return new Level(parseMeta(head), rest.slice(0, -1).map(parseObject), song);
   }
   update(delta: number) {
+    this.bg.update(delta);
+    this.ground.update(delta);
     this.camX += this.shiftSpeed * delta;
     const levelScale = 1.5;
     this.objectLayer.scale.set(levelScale, -levelScale);
     this.objectLayer.pivot.x = this.camX;
     this.objectLayer.pivot.y = this.camY;
     this.objectLayer.y = window.innerHeight;
-    this.bg.update(delta);
     this.boundX = this.camX + window.innerWidth / levelScale;
     this.boundY = this.camY + window.innerHeight / levelScale;
-
     for (const obj of this.objects) {
-      obj.update(this, delta);
+      obj.update(delta);
     }
   }
 }
