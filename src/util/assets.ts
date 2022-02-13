@@ -1,4 +1,4 @@
-import { Spritesheet, Texture, BitmapFont } from 'pixi.js';
+import { Spritesheet, Texture, BitmapFont, ISpritesheetData } from 'pixi.js';
 import dl, { ProgressHandler } from './dl';
 import * as ss1 from '../assets/spritesheets/1.json';
 import * as ss2 from '../assets/spritesheets/2.json';
@@ -86,13 +86,13 @@ const loadTextures = (
           return tt;
         })
       )
-    : urls.map(Texture.fromURL);
+    : urls.map(url => Texture.fromURL(url));
 
 export const loadSheets = (
   sheets: Sheet[],
   onProgress?: ProgressHandler
 ): Promise<void> => {
-  const meta: Partial<Record<Sheet, unknown>> = {};
+  const meta: Partial<Record<Sheet, ISpritesheetData>> = {};
   for (let i = 0; i < sheets.length; ++i) {
     const sheet = sheets[i];
     const sm = sheetMeta[sheet];
@@ -107,7 +107,7 @@ export const loadSheets = (
   ).map(async (p, i) => {
     const t = await p;
     const sheet = sheets[i];
-    const ss = new Spritesheet(t, meta[sheet]);
+    const ss = new Spritesheet(t, meta[sheet]!);
     await new Promise((res) => ss.parse(res));
     for (const k in ss.textures) {
       textures[k.slice(0, -4)] = ss.textures[k];
@@ -229,6 +229,9 @@ export const loadGroundTiles = (
   }
   return Promise.all(loadTextures(toLoad, onProgress))
     .then((ts) => {
+      for (const texture of ts) {
+        texture
+      }
       for (let i = 0, bk = 0; i < ts.length; ++i) {
         const tile = tiles[i - bk];
         groundTiles[tile] = [ts[i], tile > 7 ? (++bk, ts[++i]) : null];

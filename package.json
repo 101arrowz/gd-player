@@ -7,6 +7,7 @@
     "@parcel/packager-xml": "^2.2.1",
     "@parcel/transformer-inline-string": "^2.2.1",
     "@parcel/transformer-typescript-tsc": "^2.2.1",
+    "@types/matter-js": "^0.17.7",
     "@types/node": "^14.14.2",
     "@types/plist": "^3.0.2",
     "@typescript-eslint/eslint-plugin": "^4.6.0",

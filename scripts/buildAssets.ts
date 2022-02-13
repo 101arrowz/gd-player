@@ -9,24 +9,14 @@ import {
 import { oidMap, btnMap, modeMap, launchMap, fntMap, trackMap } from './maps';
 import { join, extname } from 'path';
 import { parse } from 'plist';
+import { ISpritesheetData, ISpritesheetFrameData } from 'pixi.js';
 
-type PixiSpriteSheetFrame = {
-  frame: { x: number; y: number; w: number; h: number };
-  rotated?: true;
-  sourceSize?: { w: number; h: number };
-};
-
-type PixiSpriteSheet = {
-  frames: Record<string, PixiSpriteSheetFrame>;
-  animations?: Record<string, string[]>;
-  meta: Record<string, unknown>;
-};
 // assets dir
 const asd = join(__dirname, '..', 'src', 'assets');
 const to = (...paths: string[]) => join(asd, ...paths);
 // resources dir
 const rsd =
-  process.env.GD_DIR ||
+  process.env.GD_RESOURCES_DIR ||
   (process.platform == 'win32'
     ? join(
         'C:',
@@ -87,7 +77,7 @@ const parseSSV = (v: string): SSV =>
 const build = (): void => {
   if (!existsSync(rsd))
     throw new Error(
-      "Couldn't find the Geometry Dash directory. Please set the GD_DIR environment variable to the path to the GD resources folder."
+      "Couldn't find the Geometry Dash directory. Please set the GD_RESOURCES_DIR environment variable to the path to the GD resources folder."
     );
   for (const dir of [
     '.',
@@ -142,9 +132,9 @@ const build = (): void => {
         else if (bn == 'GJ_LaunchSheet') c = to('spritesheets', 'launch');
         if (c) {
           const pl = parse(readFileSync(from(f), 'utf-8')) as GJSpriteSheet;
-          const out: PixiSpriteSheet = {
+          const out: ISpritesheetData = {
             frames: {},
-            meta: { scale: 1 },
+            meta: { scale: '1' },
           };
           for (const k in pl.frames) {
             const fr = pl.frames[k];
@@ -153,7 +143,7 @@ const build = (): void => {
               [number, number]
             ];
             const s = parseSSV(fr.spriteSourceSize) as [number, number];
-            const frame: PixiSpriteSheetFrame = { frame: { x, y, w, h } };
+            const frame: ISpritesheetFrameData = { frame: { x, y, w, h } };
             // Don't you just love that PixiJS and Cocos2d-x both have spriteSourceSize, but it means different things in both?
             if (s[0] != w || s[1] != h) frame.sourceSize = { w: s[0], h: s[1] };
             if (fr.textureRotated) frame.rotated = true;
