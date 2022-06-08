@@ -7,6 +7,7 @@ import {
   MultiLoad,
   ProgressHandler,
   store,
+  renderer,
 } from '../../util';
 import Scene from '../scene';
 
@@ -15,6 +16,7 @@ let resolvedBytes = 0,
 let bytes = 0,
   bytesTotal = 1;
 let resolved = false;
+let uploaded = false;
 let ts: number;
 let timesRun = 0;
 let loadProm: Promise<unknown>;
@@ -170,12 +172,14 @@ export default new Scene({
       resolved = true;
     });
     ts = Date.now();
+    const what = new Sprite();
+    what.scale.set(100);
     return {
       bg,
       logo,
       robLogo,
       slider,
-      splash,
+      splash
     };
   },
   render({ bg, logo, robLogo, slider, splash }) {
@@ -228,6 +232,12 @@ export default new Scene({
           await multiLoad(preloads[timesRun], onProgress)
           ++timesRun;
           resolved = true;
+        });
+      } else if (!uploaded) {
+        loadProm = loadProm.then(async () => {
+          await new Promise(resolve => renderer.plugins.prepare.upload(resolve));
+          resolved = true;
+          uploaded = true;
         });
       } else return 'home';
     }

@@ -1,4 +1,4 @@
-import { Spritesheet, Texture, BitmapFont } from 'pixi.js';
+import { Spritesheet, Texture, BitmapFont, MIPMAP_MODES } from 'pixi.js';
 import dl, { ProgressHandler } from './dl';
 import * as ss1 from '../assets/spritesheets/1.json';
 import * as ss2 from '../assets/spritesheets/2.json';
@@ -39,6 +39,7 @@ import fbase from 'bundle-text:../assets/fonts/base.fnt';
 import fchat from 'bundle-text:../assets/fonts/chat.fnt';
 import fgold from 'bundle-text:../assets/fonts/gold.fnt';
 import multiProgress from './multiProgress';
+import renderer from './renderer';
 
 const sheetMeta = {
   1: ss1,
@@ -83,10 +84,15 @@ const loadTextures = (
           );
           const tt = await Texture.fromURL(url);
           URL.revokeObjectURL(url);
+          renderer.plugins.prepare.add(tt);
           return tt;
         })
       )
-    : urls.map(Texture.fromURL);
+    : urls.map(async url => {
+      const tt = await Texture.fromURL(url);
+      renderer.plugins.prepare.add(tt);
+      return tt;
+    });
 
 export const loadSheets = (
   sheets: Sheet[],
@@ -151,6 +157,7 @@ export const loadBGs = (
       onProgress
     ).map((p, i) =>
       p.then((t) => {
+        t.baseTexture.mipmap = MIPMAP_MODES.OFF;
         backgrounds[bgs[i]] = t;
       })
     )
@@ -231,7 +238,8 @@ export const loadGroundTiles = (
     .then((ts) => {
       for (let i = 0, bk = 0; i < ts.length; ++i) {
         const tile = tiles[i - bk];
-        groundTiles[tile] = [ts[i], tile > 7 ? (++bk, ts[++i]) : null];
+        ts[i].baseTexture.mipmap = MIPMAP_MODES.OFF;
+        groundTiles[tile] = [ts[i], tile > 7 ? (++bk, ts[++i].baseTexture.mipmap = MIPMAP_MODES.OFF, ts[i]) : null];
       }
     })
     .then();
@@ -254,6 +262,7 @@ export const loadSliders = (
   }
   return Promise.all(loadTextures(toLoad, onProgress)).then((ts) => {
     for (let i = 0; i < ts.length; i += 2) {
+      ts[i].baseTexture.mipmap = MIPMAP_MODES.OFF;
       sliders[sls[i >> 1]] = [ts[i + 1], ts[i]];
     }
   });

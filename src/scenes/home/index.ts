@@ -1,8 +1,7 @@
 import Scene from '../scene';
-import { backgrounds, groundTiles, textures } from '../../util';
-import { Background, Button } from '../../entities';
-import { Sprite, TilingSprite } from 'pixi.js';
-import GroundTile from '../../entities/groundTile';
+import { textures } from '../../util';
+import { Background, Button, GroundTile } from '../../entities';
+import { Sprite } from 'pixi.js';
 
 const offsetB = Math.PI * 2 / 3;
 const offsetG = 2 * offsetB;

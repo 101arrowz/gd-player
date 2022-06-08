@@ -12,6 +12,9 @@ export * from '@pixi/text-bitmap';
 export * from '@pixi/interaction';
 import { InteractionManager } from '@pixi/interaction';
 Renderer.registerPlugin('interaction', InteractionManager);
+export * from '@pixi/prepare';
+import { Prepare } from '@pixi/prepare';
+Renderer.registerPlugin('prepare', Prepare);
 
 // core - do not touch
 if (!Object.assign) {

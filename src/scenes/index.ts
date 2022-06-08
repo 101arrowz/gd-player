@@ -3,6 +3,7 @@ import { BaseSpriteMap } from './scene';
 import loading from './loading';
 import home from './home';
 import level from './level';
+import { renderer } from '../util';
 
 const scenes = {
   loading,
@@ -63,7 +64,8 @@ export default (stage: Container, delta: number): void => {
       if (!tol) {
         stage.removeChildren();
         onRender = () => {};
-        Promise.resolve(scenes[scene].init()).then((sp) => {
+        Promise.resolve(scenes[scene].init()).then(async (sp) => {
+          await new Promise(resolve => renderer.plugins.prepare.upload(resolve));
           let tl = 200;
           scenes[scene].render(sp as Intersect<Parameters<typeof scenes[typeof scene]['render']>[0]>, 0);
           stage.addChild.apply(stage, Object.values(sp));

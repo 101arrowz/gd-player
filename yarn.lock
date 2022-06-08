@@ -2085,6 +2085,11 @@
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.6.tgz#f4c7ec43e81b319a9815115031709f26987891f0"
   integrity sha512-3c+yGKvVP5Y9TYBEibGNR+kLtijnj7mYrXRg+WpFb2X9xm04g/DXYkfg4hmzJQosc9snFNUPkbYIhu+KAm6jJw==
 
+"@types/matter-js@^0.14.11":
+  version "0.14.11"
+  resolved "https://registry.yarnpkg.com/@types/matter-js/-/matter-js-0.14.11.tgz#7fd07262e3cbd424b55004e36595b7d22cb74930"
+  integrity sha512-8oRVe57T/s1Fknnr1TTFZqRjOmp5syQptQCyYMvpfh/dWx3GvhcOUHoTOrg5seMguE//IOS+Wu32c0zAzewfXQ==
+
 "@types/node@*", "@types/node@^14.14.2":
   version "14.14.2"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.2.tgz#d25295f9e4ca5989a2c610754dc02a9721235eeb"
@@ -5192,6 +5197,11 @@ map-visit@^1.0.0:
   integrity sha1-7Nyo8TFE5mDxtb1B8S80edmN+48=
   dependencies:
     object-visit "^1.0.0"
+
+matter-js@^0.16.1:
+  version "0.16.1"
+  resolved "https://registry.yarnpkg.com/matter-js/-/matter-js-0.16.1.tgz#2466ef8ac54595e1869a7133091124caea568af6"
+  integrity sha512-P3nvyqTa7xxNOYbTtFVQFj9z9nf4Lyo9uHvncEXEUnyxYl4ntSjlnU73/ejFH6IUxpekDR9wqpnA1WvRdQ9B6A==
 
 md5.js@^1.3.4:
   version "1.3.5"

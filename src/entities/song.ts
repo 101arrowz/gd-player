@@ -97,7 +97,6 @@ export default class Song {
       const val = this.timeBuffer[i] - 127;
       sumRMS += val * val;
     }
-    // return sum * 3 / this.freqBuffer.length;
-    return Math.sqrt(sumRMS / this.timeBuffer.length) * 10;
+    return sum * 3 / this.freqBuffer.length + Math.sqrt(sumRMS / this.timeBuffer.length) * 10;
   }
 }

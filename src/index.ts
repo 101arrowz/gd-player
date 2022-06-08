@@ -1,5 +1,6 @@
-import { Renderer, Container, utils } from 'pixi.js';
 import 'regenerator-runtime/runtime';
+import { Container, utils } from 'pixi.js';
+import { renderer } from './util';
 import addScene from './scenes';
 import './scenes';
 if (process.env.NODE_ENV === 'production') {
@@ -9,11 +10,6 @@ if (process.env.NODE_ENV === 'production') {
 } else utils.skipHello();
 
 const stage = new Container();
-const renderer = new Renderer({
-  width: window.innerWidth,
-  height: window.innerHeight,
-});
-
 const hts = document.body.parentElement!.style;
 const bs = document.body.style;
 
@@ -24,12 +20,8 @@ document.body.appendChild(renderer.view);
 
 let lastTime = performance.now();
 const render = (newTime: number) => {
-  console.log(newTime - lastTime);
   addScene(stage, newTime - lastTime);
   lastTime = newTime;
-  if (renderer.width != window.innerWidth || renderer.height != window.innerHeight) {
-    renderer.resize(window.innerWidth, window.innerHeight);
-  }
   renderer.render(stage);
   requestAnimationFrame(render);
 };

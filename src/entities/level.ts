@@ -1,7 +1,9 @@
 import { Container, Sprite, Texture } from 'pixi.js';
+import { Bodies, Body, Engine, Events, Vector, Vertices, World } from 'matter-js';
 import { Level as GDLevel } from 'gd.js'
 import Background from './background';
 import Song from './song';
+import Player, { Gamemode, Speed } from './player';
 import { textures, BG } from '../util';
 import GroundTile from './groundTile';
 
@@ -43,14 +45,6 @@ const hsvToRGB = (h: number, s: number, v: number) => {
   else if (hsec > 1) r += x, g += c;
   else r += c, g += x;
   return (r << 16) | (g << 8) | b;
-}
-
-enum Gamemode {
-
-}
-
-enum Speed {
-
 }
 
 enum EasingType {
@@ -310,13 +304,18 @@ const parseObject = (data: string) => {
 };
 
 class LevelObject extends Sprite {
+  private flip: number;
+  private _relScale: number;
   srcX: number;
   srcY: number;
-  constructor(id: number, obj: RawGDObject) {
+  constructor(public id: number, obj: RawGDObject, protected level: Level) {
     super(textures[id]);
-    this.srcX = obj[2];
-    this.srcY = obj[3];
-    this.scale.set(obj[4] ? -0.5 : 0.5, obj[5] ? -0.5 : 0.5);
+    this.x = (this.srcX = obj[2]) << 1;
+    this.y = window.innerHeight - ((this.srcY = obj[3]) << 1);
+    if (id == 8 && this.x < 3000) console.log(obj[3]);
+    this.flip = (obj[5]! << 1) | obj[4]!;
+    this._relScale = 0;
+    this.relativeScale = 1;
     this.anchor.set(0.5);
     if (obj[6]) this.rotation = obj[6] * Math.PI / 180;
     if (obj[15]) {
@@ -328,7 +327,24 @@ class LevelObject extends Sprite {
         
       }
     }
-    this.zIndex = obj[24]!;
+    this.zIndex = obj[24] || 0;
+  }
+
+  get relativeScale() {
+    return this._relScale;
+  }
+  set relativeScale(scale: number) {
+    this._relScale = scale;
+    this.scale.set(
+      (0.5 - (this.flip & 1)) * scale,
+      (0.5 - (this.flip >> 1)) * scale
+    );
+  }
+
+  update(delta: number) {
+    this.visible = 
+      (this.x + this.width > this.level.pivot.x && this.x - this.width < this.level.pivot.x + window.innerWidth) &&
+      (this.y + this.height > this.level.pivot.y && this.y - this.height < this.level.pivot.y + window.innerHeight);
   }
 
   static matchesID(id: number) {
@@ -337,35 +353,101 @@ class LevelObject extends Sprite {
   }
 }
 
-const objectTypes: Array<typeof LevelObject> = [LevelObject];
+const objVertices: Record<number, Vector[]> = {
+  
+};
 
-const createObject = (obj: RawGDObject) => {
+class PhysObject extends LevelObject {
+  protected phys: Body;
+  private world: World;
+  constructor(id: number, obj: RawGDObject, level: Level) {
+    super(id, obj, level);
+    const x = this.srcX << 1, y = this.srcY << 1;
+    World.add(this.world = level.engine.world, this.phys = Bodies.fromVertices(x + 64, y + 64, [objVertices[id] || Bodies.rectangle(0, 0, 128, 128).vertices], {
+      friction: 0,
+      frictionAir: 0,
+      frictionStatic: 0,
+      collisionFilter: {
+        mask: 2,
+        category: 1
+      },
+      density: 1 << 31
+    }));
+    this.tint = 0xFF0000;
+  }
+
+  update(delta: number) {
+    super.update(delta);
+    Body.setVelocity(this.phys, {
+      x: -5.5,
+      y: 0
+    });
+    if (this.srcX < 4000) {
+      console.log('spike at', this.phys.position.x, this.phys.position.y);
+    }
+  }
+
+  static matchesID(id: number) {
+    return id == 8;
+  }
+}
+
+// Pulsers: https://cdn.discordapp.com/attachments/651480005536383009/824878047148769350/unknown.png
+
+const objectTypes: Array<typeof LevelObject> = [PhysObject, LevelObject];
+
+const createObject = (obj: RawGDObject, level: Level) => {
   const id = obj[1];
   for (const ObjectType of objectTypes) {
     if (ObjectType.matchesID(id)) {
-      return new ObjectType(id, obj);
+      return new ObjectType(id, obj, level);
     }
   }
 }
 
+const pulseIDs = [
+  36, // yellow ring
+  141, // pink ring
+  84, // blue ring
+  37, 50, 51, 405, // pulsing deco object
+  495, 460, 236, 150, 133, 132, 494, 496, 497 // nonsolid, scalemax = 1.2, scalemin = 0.8 
+]
+
 export default class Level extends Container {
-  private objects: LevelObject[];
-  private camX: number;
-  private bg: Background;
-  private gt: GroundTile;
-  private camY: number;
-  private shiftSpeed: number;
+  objects: LevelObject[];
+  bg: Background;
+  gt: GroundTile;
+  player: Player;
+  shiftSpeed: number;
+  rng: number;
+  engine: Engine;
+  songAmplitude: number;
   constructor(meta: RawGDMeta, objects: RawGDObject[], private song: Song) {
     super();
-    this.addChild(this.bg = new Background(meta.kA6 as BG || 1, 0.1));
-    this.addChild(this.gt = new GroundTile(1, this.shiftSpeed = 0.5));
+    this.engine = Engine.create();
+    this.engine.world.gravity.y = 0;
+    this.rng = Math.floor(Math.random() * 1073741824);
+    this.songAmplitude = 0;
+    this.addChild(this.gt = new GroundTile(1, this.shiftSpeed = 0.62));
+    World.add(this.engine.world, this.gt.phys);
+    this.addChild(this.bg = new Background(meta.kA6 as BG || 1, this.shiftSpeed / 6));
+    this.addChild(this.player = new Player(Gamemode.Cube));
+    this.interactive = true;
+    this.on('mousedown', () => this.player.click());
+    Events.on(this.engine, 'collisionStart', console.log);
+    this.player.connectTo(this.engine.world);
+    if (meta.kS1) {
+      this.bg.tint = (meta.kS1 << 16) | (meta.kS2! << 8) | meta.kS3!;
+      this.gt.tint = (meta.kS4! << 16) | (meta.kS5! << 8) | meta.kS6!;
+    } else if (meta.kS29) {
+      // TODO
+    }
     this.addChild.apply(this, this.objects = objects.reduce<LevelObject[]>((acc, obj) => {
-      const objSprite = createObject(obj);
+      const objSprite = createObject(obj, this);
       if (objSprite) acc.push(objSprite);
       return acc;
     }, []));
-    this.camY = 0;
-    this.camX = 0;
+    this.sortChildren();
   }
   static async create(level: GDLevel) {
     const [
@@ -380,16 +462,23 @@ export default class Level extends Container {
   }
   update(delta: number) {
     if (!this.song.playing) this.song.play();
+    this.songAmplitude = this.song.currentAmplitude;
+    Engine.update(this.engine, delta);
     for (const obj of this.objects) {
-      const x = obj.x = (obj.srcX * 2 - this.camX);
-      const y = obj.y = window.innerHeight - (obj.srcY * 2 + this.camY);
-      const edgeX = obj.texture.width / 2, edgeY = obj.texture.height / 2;
-      obj.visible = x > -edgeX && x < window.innerWidth + edgeX && y > -edgeY && y < window.innerHeight + edgeY;
+      obj.update(delta);
     }
-    this.bg.update(delta);
     this.gt.shiftSpeed = this.shiftSpeed;
+    this.bg.shiftSpeed = this.shiftSpeed / 6;
+    const camMovement = this.shiftSpeed * delta;
+    this.pivot.x += camMovement;
+    this.bg.horizontalOffset += camMovement;
+    this.gt.horizontalOffset += camMovement;
+    this.gt.verticalOffset = this.pivot.y = window.innerHeight - this.gt.y + this.gt.verticalOffset;
+    this.bg.update(delta);
     this.gt.update(delta);
-    this.camX += this.shiftSpeed * delta;
-    this.camY = window.innerHeight - this.gt.y;
+    this.player.horizontalOffset += camMovement;
+    this.player.update();
+    // this.player.x = 100;
+    // this.player.y = 100;
   }
 }
