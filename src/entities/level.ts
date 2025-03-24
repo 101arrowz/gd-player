@@ -1,9 +1,9 @@
-import { Container, Sprite, ObservablePoint } from 'pixi.js';
+import { Container, Sprite, ObservablePoint, Texture } from 'pixi.js';
 import { Level as GDLevel } from 'gd.js'
 import Background from './background';
 import Ground from './ground';
 import Song from './song';
-import { textures, hitboxes, Hitbox, BG } from '../util';
+import { textures, hitboxes, Hitbox, BG, gd, buildIcon } from '../util';
 
 type IntBool = 0 | 1;
 
@@ -371,9 +371,9 @@ const dist = (a: Point, b: Point) => ({
 
 const dot = (a: Point, b: Point) => a.x * b.x + a.y * b.y;
 
-class LevelObject extends Sprite {
+class BaseObject extends Sprite {
   innerScale!: number;
-  protected maxProtrude!: number;
+  maxProtrude!: number;
   readonly flip: ObservablePoint<never>;
   
   set realScale(scale: number) {
@@ -392,13 +392,29 @@ class LevelObject extends Sprite {
     return -this.angle;
   }
 
-  constructor(id: number, obj: RawGDObject, protected level: Level) {
-    super(textures[id]);
-    this.x = obj[2];
-    this.y = obj[3];
-    this.flip = new ObservablePoint(this.updatePosition, this, obj[4], obj[5]);
+  constructor(texture: Texture, loc: Point, flip?: Partial<Point>, scale?: number, rotation?: number) {
+    super(texture);
+    this.x = loc.x;
+    this.y = loc.y;
     this.anchor.set(0.5);
-    if (obj[6]) this.realRotation = obj[6];
+    this.flip = new ObservablePoint(this.updatePosition, this, flip?.x, flip?.y);
+    this.innerScale = scale || 1;
+    if (rotation) this.angle = -rotation;
+    this.updatePosition();
+  }
+
+  protected updatePosition() {
+    this.scale.set(
+      this.innerScale * 0.25 * (1 - this.flip.x * 2),
+      this.innerScale * 0.25 * (this.flip.y * 2 - 1)
+    );
+    this.maxProtrude = Math.hypot(this.width, this.height) / 4;
+  }
+}
+
+class LevelObject extends BaseObject {
+  constructor(id: number, obj: RawGDObject, protected level: Level) {
+    super(textures[id], { x: obj[2], y: obj[3] }, { x: obj[4], y: obj[5] }, obj[32] ?? 1, obj[6]);
     if (obj[15]) {
       // todo
     } else if (obj[16]) {
@@ -410,15 +426,6 @@ class LevelObject extends Sprite {
       // todo
     }
     this.zIndex = obj[24]!;
-    this.realScale = obj[32] ?? 1;
-  }
-
-  protected updatePosition() {
-    this.scale.set(
-      this.innerScale * 0.25 * (1 - this.flip.x * 2),
-      this.innerScale * 0.25 * (this.flip.y * 2 - 1)
-    );
-    this.maxProtrude = Math.hypot(this.width, this.height) / 4;
   }
 
   update(delta: number) {
@@ -520,26 +527,24 @@ abstract class PhysicalObject<CollisionInfo = true> extends LevelObject {
   }
 }
 
-type MTV = {
-  // 0 = horizontal, 1 = vertical
-  axis: 0 | 1;
-  magnitude: number;
-};
+type TVS = [number, number];
 
-abstract class RectangleObject extends PhysicalObject<MTV> {
+abstract class RectangleObject extends PhysicalObject<TVS> {
   readonly hitbox: Hitbox;
   protected boundingRect!: BoundingRect; 
   constructor(id: number, obj: RawGDObject, level: Level) {
     super(id, obj, level);
     this.hitbox = hitboxes[id];
-    this.updatePosition = () => {
-      super.updatePosition();
-      this.boundingRect = rect(this);
-    };
     this.boundingRect = rect(this);
   }
+  protected updatePosition() {
+    super.updatePosition();
+    if (this.hitbox) {
+      this.boundingRect = rect(this);
+    }
+  }
   protected collision() {
-    const loc = this.boundingRect, player = rect(this.level.player);
+    const loc = this.boundingRect, player = this.level.player.boundingRect;
 
     // only necessary if at diff angles
     // if (this.angle != this.level.player.angle)
@@ -558,7 +563,7 @@ abstract class RectangleObject extends PhysicalObject<MTV> {
       }
     }
 
-    let minMagnitude = Infinity, minAxis = 0;
+    const vectors: TVS = [0, 0];
 
     for (let i = 0; i < 2; ++i) {
       const len = i ? this.hitbox.h : this.hitbox.w;
@@ -570,33 +575,86 @@ abstract class RectangleObject extends PhysicalObject<MTV> {
         min = Math.min(val, min);
         max = Math.max(val, max);
       }
+      // console.log(max, min, this.realRotation);
       const a = len - min / len, b = max / len;
       if (a < 0 || b < 0) {
         return null;
       }
       const displacement = a < b ? a : -b;
-      if (Math.abs(displacement) < Math.abs(minMagnitude)) {
-        minMagnitude = displacement;
-        minAxis = 1 - i;
-      }
+      vectors[1 - i] = displacement;
     }
 
-    return {
-      axis: minAxis as 0 | 1,
-      magnitude: minMagnitude
-    };
+    return vectors;
   }
 }
 
 class RectangleSurface extends RectangleObject {
-  protected onCollide(collision: MTV) {
-    if (collision.axis == (this.realRotation == 0 ? 0 : 1)) {
-      this.level.player.onSurface = true;
-      this.level.player.y = Math.max(...this.boundingRect.map(p => p.y)) + 15;
+  private oldX = 0;
+  private oldY = 0;
+  private i0 = -1;
+  private i1 = -1;
+  private minPt = -1;
+  constructor(id: number, obj: RawGDObject, level: Level) {
+    super(id, obj, level);
+    this.findAxis();
+  }
+  private findAxis() {
+    const sorted = this.boundingRect.map((v, i) => ({ v, i })).sort((a, b) => b.v.y - a.v.y);
+    this.i0 = sorted[1].i;
+    this.i1 = sorted[0].i;
+    this.minPt = Math.min(this.i0, this.i1);
+    if (this.minPt == 0 && Math.max(this.i0, this.i1) == 3) {
+      this.minPt = 3;
+    }
+  }
+  protected updatePosition() {
+    super.updatePosition();
+    if (this.boundingRect) {
+      this.findAxis();
+    }
+  }
+  private checkTopCollide() {
+    if (this.level.player.x != this.oldX && this.level.player.y != this.oldY) {
+      for (const [xo, yo] of [
+        [this.level.player.hitbox.x, this.level.player.hitbox.y],
+        [this.level.player.hitbox.x + this.level.player.hitbox.w, this.level.player.hitbox.y]
+      ]) {
+        const x1 = this.level.player.x + xo;
+        const y1 = this.level.player.y + yo;
+        const x2 = this.oldX + xo;
+        const y2 = this.oldY + yo;
+        const x3 = this.boundingRect[this.i0].x;
+        const y3 = this.boundingRect[this.i0].y;
+        const x4 = this.boundingRect[this.i1].x;
+        const y4 = this.boundingRect[this.i1].y;
+        const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+        const u = ((x1 - x3) * (y1 - y2) - (y1 - y3) * (x1 - x2)) / denom;
+        // console.log({x1,y1,x2,y2,x3,y3,x4,y4,t,u})
+        if (0 <= t && 0 <= u && t <= 1 && u <= 1) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  protected onCollide(vectors: TVS) {
+    const axis = this.minPt % 2;
+    const lt = this.minPt == 0 || this.minPt == 3;
+    const val = vectors[axis];
+    if (true) {
+      console.log(val);
+      this.level.player.hitSurface(this.boundingRect[this.i1].y);
     } else {
       this.tint = 0xFF0000;
       // this.level.player.kill();
     }
+  }
+  update(delta: number) {
+    super.update(delta);
+    this.oldX = this.level.player.x;
+    this.oldY = this.level.player.y;
   }
   static matchesID(id: number) {
     return id in hitboxes && id != 8;
@@ -605,6 +663,7 @@ class RectangleSurface extends RectangleObject {
 
 class RectangleHazard extends RectangleObject {
   protected onCollide() {
+    this.tint = 0xFF0000;
     // this.level.player.kill();
   }
   static matchesID(id: number) {
@@ -612,21 +671,40 @@ class RectangleHazard extends RectangleObject {
   }
 }
 
-class Player extends Sprite {
-  maxProtrude: number;
-  hitbox: Hitbox;
+let cosmetics: import('gd.js').UserCosmetics;
+(gd.users.get('genius991')).then(u => cosmetics = u.cosmetics);
+
+const playerHitboxes = {
+  [Gamemode.Cube]: { x: -15, y: -15, w: 30, h: 30 },
+}
+
+class Player extends BaseObject {
+  private _mode!: Gamemode;
+  get mode() {
+    return this._mode;
+  }
+  set mode(mode: Gamemode) {
+    this._mode = mode;
+    this.hitbox = playerHitboxes[mode as Gamemode.Cube];
+    switch (mode) {
+      case Gamemode.Cube:
+        const baseName = 'cube' + 1;
+        const texture = buildIcon([{ texture: textures[baseName], tint: 0x00ff00 }, { texture: textures[baseName + '.2'], tint: 0x0000ff }]);
+        this.texture = texture;
+        break;
+      default:
+        throw new Error('not implemented');
+    }
+  }
+  hitbox!: Hitbox;
   velocity: number;
   onSurface = true;
-  innerScale = 1;
-  flip: ObservablePoint<never> = new ObservablePoint(() => {}, this, 0, 0);
+  boundingRect: BoundingRect;
   constructor(private level: Level) {
-    super(textures.cube0);
-    this.scale.set(0.25, -0.25);
-    this.anchor.set(0.5);
-    this.maxProtrude = Math.hypot(this.width, this.height) / 4;
-    this.hitbox = { x: -15, y: -15, w: 30, h: 30 };
+    super(Texture.EMPTY, { x: 0, y: 0 });
     this.velocity = 0;
-    this.y = 15;
+    this.mode = Gamemode.Cube;
+    this.boundingRect = rect(this);
   }
   get offset() {
     return 275;
@@ -635,13 +713,23 @@ class Player extends Sprite {
     this.level.camX = 0;
   }
   preUpdate(delta: number) {
+    this.onSurface = false;
     this.x = this.level.camX + this.offset;
     this.y += this.velocity * delta;
+    this.boundingRect = rect(this);
+  }
+  hitSurface(y: number) {
+    this.onSurface = true;
+    this.y = y - this.hitbox.y;
   }
   postUpdate(delta: number) {
-    if (this.onSurface) this.velocity = 0;
-    else this.velocity -= 0.003 * delta;
-    this.onSurface = false;
+    if (this.onSurface) {
+      this.velocity = 0;
+      this.realRotation = 0;
+    } else {
+      this.velocity -= 0.003 * delta;
+      this.realRotation += 6;
+    }
   }
 }
 
@@ -678,7 +766,7 @@ export default class Level extends Container {
   constructor(meta: RawGDMeta, objects: RawGDObject[], song: Song) {
     super();
     this.shiftSpeed = 0.3115801;
-    this.addChild(this.bg = new Background(meta.kA6 + 1 as BG, 0.1));
+    this.addChild(this.bg = new Background(meta.kA6 + 1 as BG, this.shiftSpeed / 3));
     this.objects = objects.reduce<LevelObject[]>((acc, obj) => {
       const objSprite = createObject(this, obj);
       if (objSprite) acc.push(objSprite);
@@ -709,8 +797,10 @@ export default class Level extends Container {
     window.addEventListener('mouseup', e => {
       this.clicking = false;
     });
-    window.addEventListener('keydown', () => {
-      this.clicking = true;
+    window.addEventListener('keydown', e => {
+      console.log('keydown')
+      if (e.key == 'Escape') this.shiftSpeed = this.shiftSpeed ? 0 : 0.3115801;
+      else this.clicking = true;
     })
     window.addEventListener('keyup', e => {
       this.clicking = false;
@@ -728,6 +818,8 @@ export default class Level extends Container {
     return new Level(parseMeta(head), rest.slice(0, -1).map(parseObject), song);
   }
   update(delta: number) {
+    this.ground.shiftSpeed = this.shiftSpeed;
+    this.bg.shiftSpeed = this.shiftSpeed / 3;
     this.bg.update(delta);
     this.ground.update(delta);
     this.camX += this.shiftSpeed * delta;
@@ -738,17 +830,14 @@ export default class Level extends Container {
     this.objectLayer.y = window.innerHeight;
     this.boundX = this.camX + window.innerWidth / levelScale;
     this.boundY = this.camY + window.innerHeight / levelScale;
-    this.player.tint = 0xFFFFFF;
+    if (this.clicking && this.player.onSurface) this.player.velocity = 0.6;
     this.player.preUpdate(delta);
-    if (this.player.y <= 15) {
-      this.player.onSurface = true;
-      this.player.y = 15;
+    if (this.player.y + this.player.hitbox.y <= 0) {
+      this.player.hitSurface(0);
     }
     for (const obj of this.objects) {
       obj.update(delta);
     }
-    const wasOnSurface = this.player.onSurface;
     this.player.postUpdate(delta);
-    if (this.clicking && wasOnSurface) this.player.velocity += 0.6
   }
 }
